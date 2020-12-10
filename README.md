@@ -1,6 +1,8 @@
 # TodoLists  
 
-A personal todo lists manager web app written in Python
+A personal todo lists manager web app written in Python.
+  
+This is an ongoing project for practicing web development.
 
 ## Development Roadmap
 
