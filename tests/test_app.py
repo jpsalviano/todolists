@@ -1,36 +1,88 @@
-import json
 from falcon import testing, HTTP_200
 from todolists import app
 
 
-class TestApp(testing.TestCase):
+class TestUserRegistration(testing.TestCase):
     def setUp(self):
-        super(TestApp, self).setUp()
-
+        super().setUp()
         self.app = app.create()
-        self.username = "John123"
-        self.email = "john123@fake.com"
-        self.password = "abc123-"
 
-    def test_user_registration_endpoint_status(self):
-    	result = self.simulate_get("/register")
-    	self.assertEqual(result.status, HTTP_200)
+    def test_endpoint_status(self):
+        result = self.simulate_get("/register")
+        self.assertEqual(result.status, HTTP_200)
 
-    def test_user_registration_gets_user_info_from_form(self):
-    	user_info = {
-    		"username": self.username,
-    		"email": self.email,
-    		"password_1": self.password,
-    		"password_2": self.password
-    	}
-    	result = self.simulate_post("/register", params=user_info)
-    	self.assertEqual(result.json, user_info)
+    def test_get_user_info_from_form(self):
+        user = {
+            "username": "john12",
+            "email": "john12@fake.com",
+            "password_1": "abc123-",
+            "password_2": "abc123-"
+        }
+        result = self.simulate_post("/register", params=user)
+        self.assertEqual(result.json, user)
 
-	def test_user_registration_validates_username(self):
-		pass
+    def test_raise_exception_if_username_too_short(self):
+        user = {
+            "username": "john1",
+            "email": "john12@fake.com",
+            "password_1": "abc123-",
+            "password_2": "abc123-"
+        }
+        with self.assertRaises(app.ValidationError) as err:
+            app.validate_user_info(user)
+        self.assertEqual(err.exception.message, "Username must be 6-30 characters long.")
 
-	def test_user_registration_validates_password(self):
-		pass
+    def test_raise_exception_if_username_too_long(self):
+        user = {
+            "username": 31*"a",
+            "email": "john12@fake.com",
+            "password_1": "abc123-",
+            "password_2": "abc123-"
+        }
+        with self.assertRaises(app.ValidationError) as err:
+            app.validate_user_info(user)
+        self.assertEqual(err.exception.message, "Username must be 6-30 characters long.")
 
-	def test_user_registration_validates_email(self):
-		pass
+    def test_raise_exception_if_username_contains_not_allowed_characters(self):
+        user = {
+            "username": "john.12",
+            "email": "john12@fake.com",
+            "password_1": "abc123-",
+            "password_2": "abc123-"
+        }
+        with self.assertRaises(app.ValidationError) as err:
+            app.validate_user_info(user)
+        self.assertEqual(err.exception.message, "Username must contain letters and numbers only.")
+
+    def test_raise_exception_if_passwords_dont_match(self):
+        user = {
+            "username": "john12",
+            "email": "john12@fake.com",
+            "password_1": "bac123-",
+            "password_2": "abc123-"
+        }
+        with self.assertRaises(app.ValidationError) as err:
+            app.validate_user_info(user)
+        self.assertEqual(err.exception.message, "Passwords do not match!")
+
+    def test_raise_exception_if_password_too_short(self):
+        user = {
+            "username": "john12",
+            "email": "john12@fake.com",
+            "password_1": "abc12",
+            "password_2": "abc12"
+        }
+        with self.assertRaises(app.ValidationError) as err:
+            app.validate_user_info(user)
+        self.assertEqual(err.exception.message, "Password must be 6-30 characters long.")
+
+    def test_raise_exception_if_password_too_long(self):
+        user = {
+            "username": "john12",
+            "email": "john12@fake.com",
+            "password_1": 31*".",
+            "password_2": 31*"."
+        }
+        with self.assertRaises(app.ValidationError) as err:
+            app.validate_user_info(user)
+        self.assertEqual(err.exception.message, "Password must be 6-30 characters long.")
