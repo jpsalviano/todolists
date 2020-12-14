@@ -7,10 +7,11 @@ This is an ongoing project for practicing web development.
 ## Development Roadmap
 
 ### 1 - user registration  
-	1.1 - registration form  
-	1.2 - user info validation  
-	1.3 - password encryption  
-	1.4 - save info to database: user not verified  
+	1.1 - view registration form
+	1.2 - submit registration form
+		1.2.1 - save info to database: user not verified
+		1.2.2 - user info validation
+		1.2.3 - password encryption
   
 ### 2 - email verification  
 	2.1 - create token  
