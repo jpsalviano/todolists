@@ -5,7 +5,7 @@ from todolists import db
 
 
 templates_env = Environment(
-                loader=FileSystemLoader('templates'),
+                loader=FileSystemLoader('todolists/templates'),
                 autoescape=True,
                 trim_blocks=True,
                 lstrip_blocks=True)
