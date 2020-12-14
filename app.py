@@ -1,4 +1,6 @@
 import falcon
+import random
+import json
 
 
 class UserRegistration:
@@ -8,15 +10,15 @@ class UserRegistration:
     def on_post(self, req, resp):
         try:
             validate_user_info(req.params)
+            email_code = generate_email_code()
             resp.media = req.params
         except ValidationError as err:
-            resp.body = err
+            resp.media = err
 
 
 class ValidationError(Exception):
     def __init__(self, message):
         self.message = message
-
 
 def validate_username(username):
     if len(username) not in range(6, 31):
@@ -34,6 +36,9 @@ def validate_password(password_1, password_2):
 def validate_user_info(user_info_dict):
     validate_username(user_info_dict["username"])
     validate_password(user_info_dict["password_1"], user_info_dict["password_2"])
+
+def generate_email_code():
+    return "{:06d}".format(random.randrange(999999))
 
 def create():
     app = falcon.API()
