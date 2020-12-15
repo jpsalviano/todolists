@@ -1,7 +1,8 @@
 import bcrypt
 from falcon import testing, HTTP_200
 from jinja2 import Environment, FileSystemLoader
-from todolists import app, db
+
+from todolists import app
 
 
 class TestUserRegistration(testing.TestCase):
@@ -15,7 +16,7 @@ class TestUserRegistration(testing.TestCase):
                              lstrip_blocks=True)
 
     def tearDown(self):
-        with db.conn as conn:
+        with app.db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("TRUNCATE users;")
 
@@ -36,7 +37,7 @@ class TestUserRegistration(testing.TestCase):
             "password_2": "abc123-"
         }
         result = self.simulate_post("/register", params=user_info)
-        with db.conn as conn:
+        with app.db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT email FROM users WHERE username = 'john12';")
                 self.assertEqual("john12@fake.com", curs.fetchone().email)
@@ -136,7 +137,7 @@ class TestUserRegistration(testing.TestCase):
         result = app.encrypt_password(password)
         self.assertTrue(bcrypt.checkpw(password.encode(), result))
 
-    def test_redirect_to_email_verification_page_after_form_submitted(self):
+    def test_redirect_to_email_verification_page_after_user_registration_form_submitted(self):
         user_info = {
             "username": "john12",
             "email": "john12@fake.com",
@@ -145,5 +146,4 @@ class TestUserRegistration(testing.TestCase):
         }
         result = self.simulate_post("/register", params=user_info)
         template = self.templates_env.get_template("email_verification.html")
-        self.maxDiff = None
         self.assertEqual(result.text, template.render())

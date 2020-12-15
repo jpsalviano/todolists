@@ -2,8 +2,9 @@ import bcrypt
 from jinja2 import Environment, FileSystemLoader
 import falcon
 import psycopg2
+from secrets import randbelow
 
-from todolists import db
+from todolists import db, redis_conn
 
 
 templates_env = Environment(
@@ -31,6 +32,14 @@ class UserRegistration:
             resp.body = err.exception.message
         except psycopg2.errors.UniqueViolation as err:
             resp.body = err.diag.message_primary
+        else:
+            token = create_token()
+            save_token_to_redis(req.get_param("email"), token)
+
+
+class EmailVerification:
+    def on_post(self, req, resp):
+        resp.content_type = "text/html"
 
 
 class ValidationError(Exception):
@@ -65,6 +74,15 @@ def save_user_to_db(username, email, password):
         with conn.cursor() as curs:
             curs.execute(f"INSERT INTO users (username, email, password) \
                            VALUES ('{username}', '{email}', '{password}')")
+
+def create_token():
+    token = randbelow(1000000)
+    return "{:06d}".format(token)
+
+def save_token_to_redis(email, token):
+    with redis_conn.conn as conn:
+        conn.set(email, token)
+        conn.expire(email, 600)
 
 
 def create():
