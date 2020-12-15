@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}E-mail verification{% endblock %}
+
+{% block main %}
+            <h2>Finish registration</h2>
+            <p>A code was sent to your e-mail, enter it below:</p>
+            <form action="/email_verification" method="post">
+                <label for="email_token">6-digit code</label>
+                <input type="number" max="999999" id="email_token" name="email_token"><br>
+                <button type="submit">OK</button>
+            </form>
+{% endblock %}

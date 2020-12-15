@@ -12,6 +12,7 @@ This is an ongoing project for practicing web development.
 		1.2.1 - save info to database: user not verified
 		1.2.2 - user info validation
 		1.2.3 - password encryption
+	1.3 - redirect to email verification
   
 ### 2 - email verification  
 	2.1 - create token  

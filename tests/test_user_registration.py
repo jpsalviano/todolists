@@ -1,8 +1,6 @@
 import bcrypt
 from falcon import testing, HTTP_200
 from jinja2 import Environment, FileSystemLoader
-import psycopg2
-from psycopg2.extras import NamedTupleCursor
 from todolists import app, db
 
 
@@ -30,7 +28,7 @@ class TestUserRegistration(testing.TestCase):
         template = self.templates_env.get_template("register.html")
         self.assertEqual(result.text, template.render())
 
-    def test_user_info_is_saved_to_database(self):
+    def test_submitted_form_is_saved_to_database(self):
         user_info = {
             "username": "john12",
             "email": "john12@fake.com",
@@ -50,22 +48,21 @@ class TestUserRegistration(testing.TestCase):
             "password_1": "abc123-",
             "password_2": "abc123-"
         }
-        self.simulate_post("/register", params=user_info)
-        with self.assertRaises(psycopg2.errors.UniqueViolation) as err:
-            self.simulate_post("/register", params=user_info)
+        app.save_user_to_db("john12", "john12@fake.com", "abc123-")
+        with self.assertRaises(app.psycopg2.errors.UniqueViolation) as err:
+            app.save_user_to_db("john12", "john12@fake.com", "abc123-")
         self.assertTrue("users_username_key" in err.exception.diag.message_primary)
 
-    def test_raise_excepetion_if_email_already_exists_in_database(self):
+    def test_raise_exception_if_email_already_exists_in_database(self):
         user_info = {
             "username": "john12",
             "email": "john12@fake.com",
             "password_1": "abc123-",
             "password_2": "abc123-"
         }
-        self.simulate_post("/register", params=user_info)
-        user_info["username"] = "john21"
-        with self.assertRaises(psycopg2.errors.UniqueViolation) as err:
-            self.simulate_post("/register", params=user_info)
+        app.save_user_to_db("john12", "john12@fake.com", "abc123-")
+        with self.assertRaises(app.psycopg2.errors.UniqueViolation) as err:
+            app.save_user_to_db("john21", "john12@fake.com", "abc123-")
         self.assertTrue("users_email_key" in err.exception.diag.message_primary)
 
     def test_raise_exception_if_username_too_short(self):
@@ -138,3 +135,15 @@ class TestUserRegistration(testing.TestCase):
         password = "abc123-"
         result = app.encrypt_password(password)
         self.assertTrue(bcrypt.checkpw(password.encode(), result))
+
+    def test_redirect_to_email_verification_page_after_form_submitted(self):
+        user_info = {
+            "username": "john12",
+            "email": "john12@fake.com",
+            "password_1": "abc123-",
+            "password_2": "abc123-"
+        }
+        result = self.simulate_post("/register", params=user_info)
+        template = self.templates_env.get_template("email_verification.html")
+        self.maxDiff = None
+        self.assertEqual(result.text, template.render())

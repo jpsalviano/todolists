@@ -1,6 +1,8 @@
 import bcrypt
 from jinja2 import Environment, FileSystemLoader
 import falcon
+import psycopg2
+
 from todolists import db
 
 
@@ -18,13 +20,17 @@ class UserRegistration:
         resp.body = page.render()
 
     def on_post(self, req, resp):
+        resp.content_type = "text/html"
         try:
             validate_user_info(req.params)
             encrypted_password = encrypt_password(req.params["password_1"]).decode()
             save_user_to_db(req.get_param("username"), req.get_param("email"), encrypted_password)
-            resp.media = req.params
+            page = templates_env.get_template("email_verification.html")
+            resp.body = page.render()
         except ValidationError as err:
-            resp.body = err
+            resp.body = err.exception.message
+        except psycopg2.errors.UniqueViolation as err:
+            resp.body = err.diag.message_primary
 
 
 class ValidationError(Exception):

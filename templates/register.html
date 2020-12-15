@@ -2,10 +2,8 @@
 
 {% block title %}Register{% endblock %}
 
-{% block nav %}{% endblock %}
-
 {% block main %}
-            <h2>Enter your personal info</h3>
+            <h2>Enter your personal info</h2>
             <form action="/register" method="post">
                 <label for="username">Enter a username <span tooltip="Username must be 6-30 characters long, letters and numbers only.">?</span></label>
                 <input type="text" id="username" name="username"><br>
