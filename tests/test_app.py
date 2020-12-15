@@ -53,6 +53,7 @@ class TestUserRegistration(testing.TestCase):
         self.simulate_post("/register", params=user_info)
         with self.assertRaises(psycopg2.errors.UniqueViolation) as err:
             self.simulate_post("/register", params=user_info)
+        self.assertTrue("users_username_key" in err.exception.diag.message_primary)
 
     def test_raise_excepetion_if_email_already_exists_in_database(self):
         user_info = {
@@ -65,6 +66,7 @@ class TestUserRegistration(testing.TestCase):
         user_info["username"] = "john21"
         with self.assertRaises(psycopg2.errors.UniqueViolation) as err:
             self.simulate_post("/register", params=user_info)
+        self.assertTrue("users_email_key" in err.exception.diag.message_primary)
 
     def test_raise_exception_if_username_too_short(self):
         user_info = {
