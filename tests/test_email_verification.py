@@ -30,3 +30,7 @@ class TestEmailVerification(testing.TestCase):
         app.save_token_to_redis(email, token)
         with redis_conn.conn as conn:
             self.assertTrue(conn.get(email).decode(), token)
+
+    def test_send_token_to_email(self):
+        email = "john12@fake.com"
+        

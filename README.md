@@ -15,12 +15,13 @@ This is an ongoing project for practicing web development.
 	1.3 - redirect to email verification
   
 ### 2 - email verification  
-	2.1 - create token  
-	2.2 - send email  
-	2.3 - endpoint for checking token  
-		2.3.1 - update database: user registered  
-		2.3.2 - redirect to dashboard  
-	2.4 - failure page (wrong or expired token)  
+	2.1 - create token
+	2.2 - save token to redis
+	2.3 - send email  
+	2.4 - endpoint for checking token  
+		2.4.1 - update database: user registered  
+		2.4.2 - redirect to dashboard  
+	2.5 - failure page (wrong or expired token)  
   
 ### 3 - user authentication  
 	3.1 - authentication form  
