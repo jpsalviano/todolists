@@ -3,8 +3,10 @@ from jinja2 import Environment, FileSystemLoader
 import falcon
 import psycopg2
 from secrets import randbelow
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-from todolists import db, redis_conn
+from todolists import db, redis_conn, email_server
 
 
 templates_env = Environment(
@@ -35,11 +37,6 @@ class UserRegistration:
         else:
             token = create_token()
             save_token_to_redis(req.get_param("email"), token)
-
-
-class EmailVerification:
-    def on_post(self, req, resp):
-        resp.content_type = "text/html"
 
 
 class ValidationError(Exception):
@@ -75,14 +72,30 @@ def save_user_to_db(username, email, password):
             curs.execute(f"INSERT INTO users (username, email, password) \
                            VALUES ('{username}', '{email}', '{password}')")
 
+
+class EmailVerification:
+    def on_post(self, req, resp):
+        resp.content_type = "text/html"
+
 def create_token():
-    token = randbelow(1000000)
-    return "{:06d}".format(token)
+        token = randbelow(1000000)
+        return "{:06d}".format(token)
 
 def save_token_to_redis(email, token):
     with redis_conn.conn as conn:
         conn.set(email, token)
         conn.expire(email, 600)
+
+def build_email_message_sending_code(email, token):
+    message = MIMEMultipart()
+    message['Subject'] = "Finish your registration on TodoLists!"
+    message['From'] = "TodoLists"
+    message['To'] = email
+    message.attach(MIMEText(build_body(token), "html"))
+    return message.as_string()
+
+def build_body(token):
+    return templates_env.get_template("email_message_sending_code.html").render(token=token)
 
 
 def create():
