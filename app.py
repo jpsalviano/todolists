@@ -36,7 +36,10 @@ class UserRegistration:
             resp.body = err.diag.message_primary
         else:
             token = create_token()
-            save_token_to_redis(req.get_param("email"), token)
+            email = req.get_param("email")
+            save_token_to_redis(email, token)
+            message = build_email_message_sending_code(email, token)
+            send_email_with_code(email, message)
 
 
 class ValidationError(Exception):
@@ -91,16 +94,21 @@ def build_email_message_sending_code(email, token):
     message['Subject'] = "Finish your registration on TodoLists!"
     message['From'] = "TodoLists"
     message['To'] = email
-    message.attach(MIMEText(build_body(token), "html"))
+    body = build_email_message_sending_code_html_body(token)
+    message.attach(MIMEText(body, "html"))
     return message.as_string()
 
-def build_body(token):
+def build_email_message_sending_code_html_body(token):
     return templates_env.get_template("email_message_sending_code.html").render(token=token)
+
+def send_email_with_code(email, message):
+    email_server.send_mail(email, message)
 
 
 def create():
     app = falcon.API()
     app.add_route("/register", UserRegistration())
+    app.add_route("/email_verification", EmailVerification())
     app.req_options.auto_parse_form_urlencoded = True
     return app
 
