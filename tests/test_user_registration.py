@@ -1,4 +1,5 @@
 import bcrypt
+from unittest.mock import patch
 from falcon import testing, HTTP_200
 from jinja2 import Environment, FileSystemLoader
 
@@ -31,7 +32,9 @@ class TestUserRegistration(testing.TestCase):
         template = self.templates_env.get_template("register.html")
         self.assertEqual(result.text, template.render())
 
-    def test_submitted_form_is_saved_to_database(self):
+    @patch("todolists.app.email_server.connect_server")
+    @patch("todolists.app.email_server.send_mail")
+    def test_submitted_form_is_saved_to_database(self, connect_server, send_mail):
         user_info = {
             "username": "john12",
             "email": "john12@fake.com",
