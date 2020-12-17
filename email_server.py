@@ -7,15 +7,14 @@ def get_credentials():
 
 def connect_server():
     credentials = get_credentials()
-    server = SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(credentials[0], credentials[1])
-    return server
+    server_connection = SMTP('smtp.gmail.com', 587)
+    server_connection.starttls()
+    server_connection.login(credentials[0], credentials[1])
+    return server_connection
 
-def send_mail(to_email, email_message):
-    server = connect_server()
-    server.sendmail("TodoLists", to_email, email_message)
-    server.quit()
+def send_mail(to_email, email_message, server_connection):
+    server_connection.sendmail("TodoLists", to_email, email_message)
+    server_connection.quit()
 
 
 class SendingEmailError(Exception):

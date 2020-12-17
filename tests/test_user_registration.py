@@ -136,14 +136,3 @@ class TestUserRegistration(testing.TestCase):
         password = "abc123-"
         result = app.encrypt_password(password)
         self.assertTrue(bcrypt.checkpw(password.encode(), result))
-
-    def test_redirect_to_email_verification_page_after_user_registration_form_submitted(self):
-        user_info = {
-            "username": "john12",
-            "email": "john12@fake.com",
-            "password_1": "abc123-",
-            "password_2": "abc123-"
-        }
-        result = self.simulate_post("/register", params=user_info)
-        template = self.templates_env.get_template("email_verification.html")
-        self.assertEqual(result.text, template.render())

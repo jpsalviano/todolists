@@ -28,18 +28,17 @@ class UserRegistration:
             validate_user_info(req.params)
             encrypted_password = encrypt_password(req.params["password_1"]).decode()
             save_user_to_db(req.get_param("username"), req.get_param("email"), encrypted_password)
-            page = templates_env.get_template("email_verification.html")
-            resp.body = page.render()
+            token = create_token()
+            save_token_to_redis(req.get_param("email"), token)
+            message = build_email_message_sending_code(req.get_param("email"), token)
+            send_email_with_code(req.get_param("email"), message)
         except ValidationError as err:
             resp.body = err.exception.message
         except psycopg2.errors.UniqueViolation as err:
             resp.body = err.diag.message_primary
         else:
-            token = create_token()
-            email = req.get_param("email")
-            save_token_to_redis(email, token)
-            message = build_email_message_sending_code(email, token)
-            send_email_with_code(email, message)
+            page = templates_env.get_template("email_verification.html")
+            resp.body = page.render()
 
 
 class ValidationError(Exception):
@@ -102,7 +101,8 @@ def build_email_message_sending_code_html_body(token):
     return templates_env.get_template("email_message_sending_code.html").render(token=token)
 
 def send_email_with_code(email, message):
-    email_server.send_mail(email, message)
+    server_connection = email_server.connect_server()
+    email_server.send_mail(email, message, server_connection)
 
 
 def create():
