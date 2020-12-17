@@ -25,7 +25,7 @@ class TestEmailVerification(testing.TestCase):
     def test_get_email_verification_html_after_registration_form_submitted(self, connect_server,\
                                                                                    send_mail):
         user_info = {
-            "username": "john12",
+            "name": "John Smith",
             "email": "john12@fake.com",
             "password_1": "abc123-",
             "password_2": "abc123-"
@@ -51,14 +51,14 @@ class TestEmailVerification(testing.TestCase):
 
     def test_build_sending_token_message_as_mime_str(self):
         message = app.build_email_message_sending_token("john12@fake.com", "111111")
-        result = MIMEMultipart()
-        result['Subject'] = "Finish your registration on TodoLists!"
-        result['From'] = "TodoLists"
-        result['To'] = "john12@fake.com"
+        doc = MIMEMultipart()
+        doc['Subject'] = "Finish your registration on TodoLists!"
+        doc['From'] = "TodoLists"
+        doc['To'] = "john12@fake.com"
         body = app.build_email_message_sending_token_html_body("111111")
-        result.attach(MIMEText(body, "html"))
-        self.assertTrue("111111" in result.as_string())
-        self.assertEqual(len(result.as_string()), len(message))
+        doc.attach(MIMEText(body, "html"))
+        self.assertTrue("111111" in doc.as_string())
+        self.assertEqual(len(doc.as_string()), len(message))
 
     def test_get_credentials(self):
         with open("todolists/EMAIL_", "r") as doc_file:

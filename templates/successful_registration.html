@@ -3,5 +3,9 @@
 {% block title %}Success!{% endblock %}
 
 {% block main %}
-            <h2>Success!</h2>
+            <h2>Your registration was successful!</h2>
+            <p>Click on the button below to start creating your TodoLists</p>
+            <form action="dashboard" method="get">
+                <button type="submit">Go to dashboard</button>
+            </form>
 {% endblock %}

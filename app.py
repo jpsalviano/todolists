@@ -27,12 +27,14 @@ class UserRegistration:
         try:
             validate_user_info(req.params)
             encrypted_password = encrypt_password(req.params["password_1"]).decode()
-            save_user_to_db(req.get_param("username"), req.get_param("email"), encrypted_password)
+            save_user_to_db(req.get_param("name"), req.get_param("email"), encrypted_password)
             send_email_with_token(req.get_param("email"))
         except ValidationError as err:
-            resp.body = err.exception.message
+            template = templates_env.get_template("error.html")
+            resp.body = template.render(error=err.message)
         except psycopg2.errors.UniqueViolation as err:
-            resp.body = err.diag.message_primary
+            template = templates_env.get_template("error.html")
+            resp.body = template.render(error="Your email is already in use! Please choose another one.")
         else:
             template = templates_env.get_template("email_verification.html")
             resp.body = template.render()
@@ -44,15 +46,15 @@ class ValidationError(Exception):
 
 
 def validate_user_info(user_info):
-    validate_username(user_info["username"])
+    validate_name(user_info["name"])
     validate_password(user_info["password_1"], user_info["password_2"])
 
-def validate_username(username):
-    if len(username) not in range(6, 31):
-        raise ValidationError("Username must be 6-30 characters long.")
-    for char in username:
-        if not char.isalnum():
-            raise ValidationError("Username must contain letters and numbers only.")
+def validate_name(name):
+    for char in name:
+        if char.isalpha() or char == " " or char == ".":
+            pass
+        else:
+            raise ValidationError("Name must contain letters, periods (.) or spaces only.")
 
 def validate_password(password_1, password_2):
     if password_1 != password_2:
@@ -65,11 +67,11 @@ def encrypt_password(password):
     hashed = bcrypt.hashpw(password.encode(), salt)
     return hashed
 
-def save_user_to_db(username, email, password):
+def save_user_to_db(name, email, password):
     with db.conn as conn:
         with conn.cursor() as curs:
-            curs.execute(f"INSERT INTO users (username, email, password) \
-                           VALUES ('{username}', '{email}', '{password}')")
+            curs.execute(f"INSERT INTO users (name, email, password) \
+                           VALUES ('{name}', '{email}', '{password}')")
 
 
 class EmailVerification:

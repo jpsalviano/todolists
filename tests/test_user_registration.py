@@ -16,7 +16,11 @@ class TestUserRegistration(testing.TestCase):
                              autoescape=True,
                              trim_blocks=True,
                              lstrip_blocks=True)
-        self.startTime = time.time()
+        def verify_email_in_db(email):
+            with app.db.conn as conn:
+                with conn.cursor() as curs:
+                    curs.execute(f"UPDATE users SET verified=true WHERE email='{email}'")
+        self.verify_email_in_db = verify_email_in_db
 
     def tearDown(self):
         with app.db.conn as conn:
@@ -36,7 +40,7 @@ class TestUserRegistration(testing.TestCase):
     @patch("todolists.app.email_server.send_mail")
     def test_submitted_form_is_saved_to_database(self, connect_server, send_mail):
         user_info = {
-            "username": "john12",
+            "name": "John Smith",
             "email": "john12@fake.com",
             "password_1": "abc123-",
             "password_2": "abc123-"
@@ -44,69 +48,56 @@ class TestUserRegistration(testing.TestCase):
         result = self.simulate_post("/register", params=user_info)
         with app.db.conn as conn:
             with conn.cursor() as curs:
-                curs.execute("SELECT email FROM users WHERE username = 'john12';")
+                curs.execute("SELECT email FROM users WHERE name = 'John Smith';")
                 self.assertEqual("john12@fake.com", curs.fetchone().email)
 
-    def test_raise_exception_if_username_already_exists_in_database(self):
-        user_info = {
-            "username": "john12",
-            "email": "john12@fake.com",
-            "password_1": "abc123-",
-            "password_2": "abc123-"
-        }
-        app.save_user_to_db("john12", "john12@fake.com", "abc123-")
+    def test_raise_exception_if_verified_email_already_in_db(self):
+        app.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
+        self.verify_email_in_db("john12@fake.com")
         with self.assertRaises(app.psycopg2.errors.UniqueViolation) as err:
-            app.save_user_to_db("john12", "john12@fake.com", "abc123-")
-        self.assertTrue("users_username_key" in err.exception.diag.message_primary)
-
-    def test_raise_exception_if_email_already_exists_in_database(self):
-        user_info = {
-            "username": "john12",
-            "email": "john12@fake.com",
-            "password_1": "abc123-",
-            "password_2": "abc123-"
-        }
-        app.save_user_to_db("john12", "john12@fake.com", "abc123-")
-        with self.assertRaises(app.psycopg2.errors.UniqueViolation) as err:
-            app.save_user_to_db("john21", "john12@fake.com", "abc123-")
+            app.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
         self.assertTrue("users_email_key" in err.exception.diag.message_primary)
 
-    def test_raise_exception_if_username_too_short(self):
+    def test_get_error_page_if_verified_email_already_in_db(self):
+        template = app.templates_env.get_template("error.html")
+        doc = template.render(error="Your email is already in use! Please choose another one.")
+        app.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
+        self.verify_email_in_db("john12@fake.com")
         user_info = {
-            "username": "john1",
+            "name": "John Smith",
             "email": "john12@fake.com",
             "password_1": "abc123-",
             "password_2": "abc123-"
         }
-        with self.assertRaises(app.ValidationError) as err:
-            app.validate_user_info(user_info)
-        self.assertEqual(err.exception.message, "Username must be 6-30 characters long.")
+        result = self.simulate_post("/register", params=user_info)
+        self.assertEqual(doc, result.text)
 
-    def test_raise_exception_if_username_too_long(self):
+    def test_raise_exception_if_name_contains_not_allowed_characters(self):
         user_info = {
-            "username": 31*"a",
+            "name": "John Smith 1",
             "email": "john12@fake.com",
             "password_1": "abc123-",
             "password_2": "abc123-"
         }
         with self.assertRaises(app.ValidationError) as err:
             app.validate_user_info(user_info)
-        self.assertEqual(err.exception.message, "Username must be 6-30 characters long.")
+        self.assertEqual(err.exception.message, "Name must contain letters, periods (.) or spaces only.")
 
-    def test_raise_exception_if_username_contains_not_allowed_characters(self):
+    def test_get_error_page_if_name_contains_not_allowed_characters(self):
+        template = app.templates_env.get_template("error.html")
+        doc = template.render(error="Name must contain letters, periods (.) or spaces only.")
         user_info = {
-            "username": "john.12",
+            "name": "John Smith 1",
             "email": "john12@fake.com",
             "password_1": "abc123-",
             "password_2": "abc123-"
         }
-        with self.assertRaises(app.ValidationError) as err:
-            app.validate_user_info(user_info)
-        self.assertEqual(err.exception.message, "Username must contain letters and numbers only.")
+        result = self.simulate_post("/register", params=user_info)
+        self.assertEqual(doc, result.text)       
 
     def test_raise_exception_if_passwords_dont_match(self):
         user_info = {
-            "username": "john12",
+            "name": "John Smith",
             "email": "john12@fake.com",
             "password_1": "bac123-",
             "password_2": "abc123-"
@@ -115,9 +106,21 @@ class TestUserRegistration(testing.TestCase):
             app.validate_user_info(user_info)
         self.assertEqual(err.exception.message, "Passwords do not match!")
 
+    def test_get_error_page_if_passwords_dont_match(self):
+        template = app.templates_env.get_template("error.html")
+        doc = template.render(error="Passwords do not match!")
+        user_info = {
+            "name": "John Smith",
+            "email": "john12@fake.com",
+            "password_1": "abc123-",
+            "password_2": "abc213-"
+        }
+        result = self.simulate_post("/register", params=user_info)
+        self.assertEqual(doc, result.text)
+
     def test_raise_exception_if_password_too_short(self):
         user_info = {
-            "username": "john12",
+            "name": "John Smith",
             "email": "john12@fake.com",
             "password_1": "abc12",
             "password_2": "abc12"
@@ -126,9 +129,21 @@ class TestUserRegistration(testing.TestCase):
             app.validate_user_info(user_info)
         self.assertEqual(err.exception.message, "Password must be 6-30 characters long.")
 
+    def test_get_error_page_if_password_too_short(self):
+        template = app.templates_env.get_template("error.html")
+        doc = template.render(error="Password must be 6-30 characters long.")
+        user_info = {
+            "name": "John Smith",
+            "email": "john12@fake.com",
+            "password_1": "abc12",
+            "password_2": "abc12"
+        }
+        result = self.simulate_post("/register", params=user_info)
+        self.assertEqual(doc, result.text)
+
     def test_raise_exception_if_password_too_long(self):
         user_info = {
-            "username": "john12",
+            "name": "John Smith",
             "email": "john12@fake.com",
             "password_1": 31*".",
             "password_2": 31*"."
@@ -137,7 +152,34 @@ class TestUserRegistration(testing.TestCase):
             app.validate_user_info(user_info)
         self.assertEqual(err.exception.message, "Password must be 6-30 characters long.")
 
+    def test_get_error_page_if_password_too_short(self):
+        template = app.templates_env.get_template("error.html")
+        doc = template.render(error="Password must be 6-30 characters long.")
+        user_info = {
+            "name": "John Smith",
+            "email": "john112@fake.com",
+            "password_1": 31*".",
+            "password_2": 31*"."
+        }
+        result = self.simulate_post("/register", params=user_info)
+        self.assertEqual(doc, result.text)
+
     def test_encrypt_password(self):
         password = "abc123-"
         result = app.encrypt_password(password)
         self.assertTrue(bcrypt.checkpw(password.encode(), result))
+
+    @patch("todolists.app.email_server.connect_server")
+    @patch("todolists.app.email_server.send_mail")
+    def test_allow_new_registration_of_non_verified_email(self, connect_server, send_mail):
+        template = app.templates_env.get_template("email_verification.html")
+        doc = template.render()
+        app.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
+        user_info = {
+            "name": "John Smith",
+            "email": "john12@fake.com",
+            "password_1": "abc123-",
+            "password_2": "abc123-"
+        }
+        result = self.simulate_post("/register", params=user_info)
+        self.assertEqual(doc, result.text)
