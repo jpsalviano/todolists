@@ -3,6 +3,7 @@ from falcon import testing, HTTP_200
 from jinja2 import Environment, FileSystemLoader
 
 from todolists import app
+import time
 
 
 class TestUserRegistration(testing.TestCase):
@@ -14,6 +15,7 @@ class TestUserRegistration(testing.TestCase):
                              autoescape=True,
                              trim_blocks=True,
                              lstrip_blocks=True)
+        self.startTime = time.time()
 
     def tearDown(self):
         with app.db.conn as conn:

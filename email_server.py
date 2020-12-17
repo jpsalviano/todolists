@@ -2,9 +2,10 @@ from smtplib import SMTP
 
 
 def get_credentials():
-    credentials = open("todolists/EMAIL_", "r")
-    return credentials.read().split("\n")
-
+    with open("todolists/EMAIL_", "r") as c:
+        credentials = c.read().split("\n")
+    return credentials
+    
 def connect_server():
     credentials = get_credentials()
     server_connection = SMTP('smtp.gmail.com', 587)

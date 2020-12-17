@@ -30,8 +30,8 @@ class UserRegistration:
             save_user_to_db(req.get_param("username"), req.get_param("email"), encrypted_password)
             token = create_token()
             save_token_to_redis(req.get_param("email"), token)
-            message = build_email_message_sending_code(req.get_param("email"), token)
-            send_email_with_code(req.get_param("email"), message)
+            message = build_email_message_sending_token(req.get_param("email"), token)
+            send_email_with_token(req.get_param("email"), message)
         except ValidationError as err:
             resp.body = err.exception.message
         except psycopg2.errors.UniqueViolation as err:
@@ -88,19 +88,19 @@ def save_token_to_redis(email, token):
         conn.set(email, token)
         conn.expire(email, 600)
 
-def build_email_message_sending_code(email, token):
+def build_email_message_sending_token(email, token):
     message = MIMEMultipart()
     message['Subject'] = "Finish your registration on TodoLists!"
     message['From'] = "TodoLists"
     message['To'] = email
-    body = build_email_message_sending_code_html_body(token)
+    body = build_email_message_sending_token_html_body(token)
     message.attach(MIMEText(body, "html"))
     return message.as_string()
 
-def build_email_message_sending_code_html_body(token):
+def build_email_message_sending_token_html_body(token):
     return templates_env.get_template("email_message_sending_code.html").render(token=token)
 
-def send_email_with_code(email, message):
+def send_email_with_token(email, message):
     server_connection = email_server.connect_server()
     email_server.send_mail(email, message, server_connection)
 
