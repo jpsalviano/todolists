@@ -28,7 +28,7 @@ class UserRegistration:
             validate_user_info(req.params)
             encrypted_password = encrypt_password(req.params["password_1"]).decode()
             save_user_to_db(req.get_param("name"), req.get_param("email"), encrypted_password)
-            send_email_with_token(req.get_param("email"))
+            send_email_with_token(req.get_param("email"))   
         except ValidationError as err:
             template = templates_env.get_template("error.html")
             resp.body = template.render(error=err.message)
@@ -37,6 +37,19 @@ class UserRegistration:
             resp.body = template.render(error="Your email is already in use! Please choose another one.")
         else:
             template = templates_env.get_template("email_verification.html")
+            resp.body = template.render()
+
+
+class EmailVerification:
+    def on_post(self, req, resp):
+        resp.content_type = "text/html"
+        try:
+            update_user_verified_in_db(get_email(req.get_param("token")))
+        except ValidationError as err:
+            template = templates_env.get_template("error.html")
+            resp.body = template.render(error=err)
+        else:
+            template = templates_env.get_template("successful_registration.html")
             resp.body = template.render()
 
 
@@ -71,15 +84,7 @@ def save_user_to_db(name, email, password):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute(f"INSERT INTO users (name, email, password) \
-                           VALUES ('{name}', '{email}', '{password}')")
-
-
-class EmailVerification:
-    def on_post(self, req, resp):
-        resp.content_type = "text/html"
-        update_user_verified_in_db(get_email(req.get_param("token")))
-        template = templates_env.get_template("successful_registration.html")
-        resp.body = template.render()
+                           VALUES (%s, %s, %s)", [name, email, password])
 
 def create_token():
         token = randbelow(1000000)
@@ -112,12 +117,15 @@ def send_email_with_token(email):
 def get_email(token):
     with redis_conn.conn as conn:
         email = conn.get(token)
-    return email.decode()
+        if email:
+            return email.decode()
+        else:
+            raise ValidationError("The code entered is either wrong or expired.")
 
 def update_user_verified_in_db(email):
     with db.conn as conn:
         with conn.cursor() as curs:
-            curs.execute(f"UPDATE users SET verified=true WHERE email='{email}'")
+            curs.execute(f"UPDATE users SET verified=true WHERE email=%s", (email,))
 
 
 def create():

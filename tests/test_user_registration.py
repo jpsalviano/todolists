@@ -19,7 +19,7 @@ class TestUserRegistration(testing.TestCase):
         def verify_email_in_db(email):
             with app.db.conn as conn:
                 with conn.cursor() as curs:
-                    curs.execute(f"UPDATE users SET verified=true WHERE email='{email}'")
+                    curs.execute(f"UPDATE users SET verified=true WHERE email=%s", (email,))
         self.verify_email_in_db = verify_email_in_db
 
     def tearDown(self):
@@ -168,18 +168,3 @@ class TestUserRegistration(testing.TestCase):
         password = "abc123-"
         result = app.encrypt_password(password)
         self.assertTrue(bcrypt.checkpw(password.encode(), result))
-
-    @patch("todolists.app.email_server.connect_server")
-    @patch("todolists.app.email_server.send_mail")
-    def test_allow_new_registration_of_non_verified_email(self, connect_server, send_mail):
-        template = app.templates_env.get_template("email_verification.html")
-        doc = template.render()
-        app.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
-        user_info = {
-            "name": "John Smith",
-            "email": "john12@fake.com",
-            "password_1": "abc123-",
-            "password_2": "abc123-"
-        }
-        result = self.simulate_post("/register", params=user_info)
-        self.assertEqual(doc, result.text)

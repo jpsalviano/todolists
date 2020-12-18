@@ -18,7 +18,6 @@ This is an ongoing project for practicing web development.
 		1.4.2 - name contains forbidden chars
 		1.4.3 - password too short
 		1.4.4 - password too long
-	1.5 - allow new registration of non-verified user
   
 ### 2 - email verification  
 	2.1 - create token

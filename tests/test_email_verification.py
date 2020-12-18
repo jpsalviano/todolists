@@ -95,3 +95,9 @@ class TestEmailVerification(testing.TestCase):
         result = self.simulate_post("/email_verification", params={"token": "111111"})
         template = app.templates_env.get_template("successful_registration.html")
         self.assertEqual(result.text, template.render())
+
+    def test_get_error_page_if_token_entered_is_wrong(self):
+        app.save_token_to_redis("111111", "john12@fake.com")
+        result = self.simulate_post("/email_verification", params={"token": "111112"})
+        template = app.templates_env.get_template("error.html")
+        self.assertEqual(result.text, template.render(error="The code entered is either wrong or expired."))
