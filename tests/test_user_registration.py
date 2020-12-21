@@ -1,6 +1,6 @@
-import bcrypt
-from unittest.mock import patch
 from falcon import testing, HTTP_200
+from unittest.mock import patch
+import bcrypt
 
 from todolists import app, db, user_registration
 
@@ -9,11 +9,11 @@ class TestUserRegistration(testing.TestCase):
     def setUp(self):
         super().setUp()
         self.app = app.create()
-        def verify_email_in_db(email):
+        def verify_user_in_db(email):
             with db.conn as conn:
                 with conn.cursor() as curs:
                     curs.execute(f"UPDATE users SET verified=true WHERE email=%s", (email,))
-        self.verify_email_in_db = verify_email_in_db
+        self.verify_user_in_db = verify_user_in_db
 
     def tearDown(self):
         with db.conn as conn:
@@ -46,7 +46,7 @@ class TestUserRegistration(testing.TestCase):
 
     def test_raise_exception_if_verified_email_already_in_db(self):
         user_registration.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
-        self.verify_email_in_db("john12@fake.com")
+        self.verify_user_in_db("john12@fake.com")
         with self.assertRaises(db.psycopg2.errors.UniqueViolation) as err:
             user_registration.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
         self.assertTrue("users_email_key" in err.exception.diag.message_primary)
@@ -55,7 +55,7 @@ class TestUserRegistration(testing.TestCase):
         template = app.templates_env.get_template("error.html")
         doc = template.render(error="Your email is already in use! Please choose another one.")
         user_registration.save_user_to_db("John Smith", "john12@fake.com", "abc123-")
-        self.verify_email_in_db("john12@fake.com")
+        self.verify_user_in_db("john12@fake.com")
         user_info = {
             "name": "John Smith",
             "email": "john12@fake.com",

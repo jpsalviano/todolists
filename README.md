@@ -33,7 +33,12 @@ This is an ongoing project for practicing web development.
 ### 3 - user authentication  
 	3.1 - authentication form  
 	3.2 - endpoint post - create session with token on redis (token user_id)  
-		3.2.1 - set cookie with token  
+		3.2.1 - check database for password validation
+		3.2.2 - check database for verified state
+		3.2.3 - get user_id from database
+		3.2.4 - create token
+		3.2.5 - on redis set key=token value=user_id
+		3.2.6 - set cookie with token
 	3.3 - protect private endpoints - a function that takes cookie and returns user_id, else raise 401  
 	3.4 - logout - delete session on redis and unset cookie on user browser
 	3.5 - session for non-verified user (generate new token to verify email)
