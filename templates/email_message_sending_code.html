@@ -4,7 +4,10 @@
     <title>TodoLists</title>  
 </head>
 <body>
-    <header>Enter the 6-digit code below on TodoLists to finish your registration</header>
-    <main>{% block main %} {{ token }} {% endblock %}</main>     
+    <header><h1>Enter the 6-digit code below on TodoLists to finish your registration</h1></header>
+    <main>
+        <span id="token">{% block main %} {{ token }} {% endblock %}</span>
+        <p>This token will expire in 10 minutes.</p>
+    </main>
 </body>
 </html>
