@@ -13,12 +13,12 @@ templates_env = Environment(
 
 class UserRegistration:
     def on_get(self, req, resp):
-        content_type = "text/html"
+        resp.content_type = "text/html"
         page = templates_env.get_template("register.html")
         resp.body = page.render()
 
     def on_post(self, req, resp):
-        content_type = "text/html"
+        resp.content_type = "text/html"
         try:
             user_registration.validate_user_info(req.params)
             encrypted_password = user_registration.encrypt_password(req.params["password_1"]).decode()
@@ -37,7 +37,7 @@ class UserRegistration:
 
 class EmailVerification:
     def on_post(self, req, resp):
-        content_type = "text/html"
+        resp.content_type = "text/html"
         try:
             email = email_verification.get_email_by_token(req.get_param("token"))
             email_verification.update_user_verified_in_db(email)
@@ -51,21 +51,20 @@ class EmailVerification:
 
 class UserAuthentication:
     def on_get(self, req, resp):
-        content_type = "text/html"
+        resp.content_type = "text/html"
         template = templates_env.get_template("login.html")
         resp.body = template.render()
 
     def on_post(self, req, resp):
-        content_type = "text/html"
+        resp.content_type = "text/html"
         try:
-            user_authentication.validate_password_against_db(req.get_param("email"), req.get_param("password"))
-            user_authentication.is_verified(req.get_param("email"))
-            cookie_key = user_authentication.create_cookie_key_token()
-            cookie_value = user_authentication.get_user_id(req.get_param("email"))
-            user_authentication.set_key_value_cookie_on_redis(cookie_key, cookie_value)
-            resp.set_cookie(cookie_key, cookie_value)
-        except:
-            raise Exception
+            cookie_name, cookie_value = user_authentication.authenticate(req.get_param("email"),
+                                                                         req.get_param("password"))
+            resp.set_cookie(cookie_name, cookie_value)
+            template = templates_env.get_template("dashboard.html")
+            resp.body = template.render()
+        except user_authentication.AuthenticationError as err:
+            resp.body = err.message
 
 
 def create():
