@@ -12,10 +12,10 @@ class AuthenticationError(Exception):
 def authenticate(email, password):
     validate_email_password_against_db(email, password)
     is_user_email_verified(email)
-    cookie_name = create_session_cookie_name()
-    cookie_value = get_user_id(email)
-    set_cookie_on_redis(cookie_name, cookie_value)
-    return (cookie_name, cookie_value)
+    user_id = get_user_id(email)
+    cookie_value = create_session_cookie_token()
+    set_cookie_on_redis(cookie_value, user_id)
+    return cookie_value
 
 def validate_email_password_against_db(email, password):
     with db.conn as conn:
@@ -46,7 +46,7 @@ def get_user_id(email):
             curs.execute("SELECT user_id FROM users WHERE email = %s", [email])
             return str(curs.fetchone().user_id)
 
-def create_session_cookie_name():
+def create_session_cookie_token():
     return token_hex(6)
 
 def set_cookie_on_redis(name, value):

@@ -58,9 +58,8 @@ class UserAuthentication:
     def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
-            cookie_name, cookie_value = user_authentication.authenticate(req.get_param("email"),
-                                                                         req.get_param("password"))
-            resp.set_cookie(cookie_name, cookie_value)
+            cookie_value = user_authentication.authenticate(req.get_param("email"), req.get_param("password"))
+            resp.set_cookie("session-token", cookie_value)
             template = templates_env.get_template("dashboard.html")
             resp.body = template.render()
         except user_authentication.AuthenticationError as err:
