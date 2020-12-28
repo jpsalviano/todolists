@@ -1,4 +1,5 @@
 import falcon
+from falcon import HTTP_401
 from jinja2 import Environment, FileSystemLoader
 
 from todolists import db, user_registration, email_verification, user_authentication
@@ -45,6 +46,10 @@ class EmailVerification:
             template = templates_env.get_template("error.html")
             resp.body = template.render(error=err)
         else:
+            cookie_value = user_authentication.create_session_cookie_token()
+            user_id = user_authentication.get_user_id(email)
+            user_authentication.set_cookie_on_redis(cookie_value, user_id)
+            resp.set_cookie("session-token", cookie_value)
             template = templates_env.get_template("successful_registration.html")
             resp.body = template.render()
 
@@ -52,18 +57,26 @@ class EmailVerification:
 class UserAuthentication:
     def on_get(self, req, resp):
         resp.content_type = "text/html"
-        template = templates_env.get_template("login.html")
-        resp.body = template.render()
+        try:
+            user_id = user_authentication.check_session_cookie(req.get_cookie_values("session-token"))
+            template = templates_env.get_template("dashboard.html")
+            resp.body = template.render(user_id=user_id)
+        except:
+            template = templates_env.get_template("login.html")
+            resp.body = template.render()
 
     def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
             cookie_value = user_authentication.authenticate(req.get_param("email"), req.get_param("password"))
-            resp.set_cookie("session-token", cookie_value)
-            template = templates_env.get_template("dashboard.html")
-            resp.body = template.render()
         except user_authentication.AuthenticationError as err:
+            resp.status = HTTP_401
             resp.body = err.message
+        else:
+            resp.set_cookie("session-token", cookie_value)
+            user_id = user_authentication.check_session_cookie(req.get_cookie_values("session-token"))
+            template = templates_env.get_template("dashboard.html")
+            resp.body = template.render(user_id=user_id)
 
 
 def create():

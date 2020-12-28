@@ -23,7 +23,7 @@ class TestEmailVerification(testing.TestCase):
     @patch("todolists.email_server.connect_server")
     @patch("todolists.email_server.send_mail")
     def test_get_email_verification_html_after_registration_form_submitted(self, connect_server,\
-                                                                                   send_mail):
+                                                                           send_mail):
         user_info = {
             "name": "John Smith",
             "email": "john12@fake.com",
@@ -67,7 +67,7 @@ class TestEmailVerification(testing.TestCase):
         self.assertEqual(doc, result)
 
     @patch("todolists.email_server.connect_server")
-    def test_email_server_connects(self, connect_server):
+    def test_email_server_is_called_with_user_email(self, connect_server):
         email_verification.send_email_with_token("john12@fake.com")
         connect_server.assert_called_once()
 
@@ -82,7 +82,7 @@ class TestEmailVerification(testing.TestCase):
         self.assertEqual(email_verification.get_email_by_token("111111"), "john12@fake.com")
 
     def test_update_user_verified_in_db(self):
-        save_user_to_db("john12", "john12@fake.com",
+        save_user_to_db("John", "john12@fake.com",
                         "$2b$12$SarrTn1SWbB2/k.JugfBSOgpLIumfkzuSKXlCImDsKghyRHttUxxm")
         email_verification.update_user_verified_in_db("john12@fake.com")
         with db.conn as conn:
@@ -92,7 +92,9 @@ class TestEmailVerification(testing.TestCase):
 
     def test_successful_registration_page_when_correct_token_is_entered(self):
         email_verification.save_token_to_redis("111111", "john12@fake.com")
-        result = self.simulate_post("/email_verification", params={"token": "111111"})
+        with patch("todolists.user_authentication.get_user_id") as get_user_id:
+            get_user_id.return_value = "111"
+            result = self.simulate_post("/email_verification", params={"token": "111111"})
         template = app.templates_env.get_template("successful_registration.html")
         self.assertEqual(result.text, template.render())
 

@@ -29,7 +29,6 @@ def validate_email_password_against_db(email, password):
         return True
     else:
         raise AuthenticationError("The password entered is wrong!")
-        
 
 def is_user_email_verified(email):
     with db.conn as conn:
@@ -49,6 +48,15 @@ def get_user_id(email):
 def create_session_cookie_token():
     return token_hex(6)
 
-def set_cookie_on_redis(name, value):
+def set_cookie_on_redis(cookie_value, user_id):
     with redis_conn.conn as conn:
-        conn.set(name, value)
+        conn.set(cookie_value, user_id)
+
+def check_session_cookie(cookie_value):
+    with redis_conn.conn as conn:
+        try:
+            user_id = conn.get(cookie_value)
+        except:
+            raise AuthenticationError("Unauthorized.")
+        else:
+            return user_id.decode()

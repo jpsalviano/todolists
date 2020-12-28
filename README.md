@@ -39,7 +39,7 @@ This is an ongoing project for practicing web development.
 		3.2.4 - get user_id from database
 		3.2.5 - on redis set key=token value=user_id
 		3.2.6 - set cookie ("session-token": token) 
-	3.3 - protect private endpoints - a function that takes cookie and returns user_id, else raise 401  
+	3.3 - protect private endpoints - a function that takes cookie and returns user_id, else raise 401
 	3.4 - logout - delete session on redis and unset cookie on user browser
 	3.5 - session for non-verified user (generate new token to verify email)
   
