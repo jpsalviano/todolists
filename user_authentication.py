@@ -11,11 +11,11 @@ class AuthenticationError(Exception):
 
 def authenticate_user(email, password):
     validate_password_against_db(email, password)
-    is_user_email_verified(email)
+    validate_email_verification(email)
     user_id = get_user_id(email)
-    cookie_value = create_session_cookie_token()
-    set_cookie_on_redis(cookie_value, user_id)
-    return cookie_value
+    session_token = create_session_token()
+    set_session_token_on_redis(session_token, user_id)
+    return session_token
 
 def validate_password_against_db(email, password):
     with db.conn as conn:
@@ -30,12 +30,14 @@ def validate_password_against_db(email, password):
     else:
         raise AuthenticationError("The password entered is wrong!")
 
-def is_user_email_verified(email):
+def validate_email_verification(email):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT verified FROM users WHERE email = %s", [email])
-            if curs.fetchone().verified:
-                return True
+            verified = curs.fetchone().verified
+            print(email, verified)
+            if verified == True:
+                pass
             else:
                 raise AuthenticationError("Your email was not verified.")
 
@@ -45,18 +47,17 @@ def get_user_id(email):
             curs.execute("SELECT user_id FROM users WHERE email = %s", [email])
             return str(curs.fetchone().user_id)
 
-def create_session_cookie_token():
+def create_session_token():
     return token_hex(6)
 
-def set_cookie_on_redis(cookie_value, user_id):
+def set_session_token_on_redis(session_token, user_id):
     with redis_conn.conn as conn:
-        conn.set(cookie_value, user_id)
+        conn.set(session_token, user_id)
 
-def check_session_cookie(cookie_value):
+def check_session_token(session_token):
     with redis_conn.conn as conn:
-        try:
-            user_id = conn.get(cookie_value[0])
-        except:
-            raise AuthenticationError("Unauthorized.")
-        else:
+        user_id = conn.get(session_token)
+        if user_id:
             return user_id.decode()
+        else:
+            raise AuthenticationError("Unauthorized.")

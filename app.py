@@ -15,7 +15,6 @@ templates_env = Environment(
 class UserRegistration:
     def on_get(self, req, resp):
         resp.content_type = "text/html"
-        print(req.get_cookie("session-token"))
         page = templates_env.get_template("register.html")
         resp.body = page.render()
 
@@ -47,10 +46,10 @@ class EmailVerification:
             template = templates_env.get_template("error.html")
             resp.body = template.render(error=err)
         else:
-            cookie_value = user_authentication.create_session_cookie_token()
+            session_token = user_authentication.create_session_token()
             user_id = user_authentication.get_user_id(email)
-            user_authentication.set_cookie_on_redis(cookie_value, user_id)
-            resp.set_cookie("session-token", cookie_value)
+            user_authentication.set_session_token_on_redis(session_token, user_id)
+            resp.set_cookie("session-token", session_token)
             template = templates_env.get_template("successful_registration.html")
             resp.body = template.render()
 
@@ -59,7 +58,7 @@ class UserAuthentication:
     def on_get(self, req, resp):
         resp.content_type = "text/html"
         try:
-            user_id = user_authentication.check_session_cookie(req.get_cookie_values("session-token"))
+            user_id = user_authentication.check_session_token(req.cookies)
             template = templates_env.get_template("dashboard.html")
             resp.body = template.render(user_id=user_id)
         except:
@@ -69,13 +68,13 @@ class UserAuthentication:
     def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
-            cookie_value = user_authentication.authenticate_user(req.get_param("email"), req.get_param("password"))
+            session_token = user_authentication.authenticate_user(req.get_param("email"), req.get_param("password"))
         except user_authentication.AuthenticationError as err:
             resp.status = HTTP_401
             resp.body = err.message
         else:
-            resp.set_cookie("session-token", cookie_value)
-            user_id = user_authentication.check_session_cookie(req.get_cookie_values("session-token"))
+            resp.set_cookie("session-token", session_token)
+            user_id = user_authentication.get_user_id(req.get_param("email"))
             template = templates_env.get_template("dashboard.html")
             resp.body = template.render(user_id=user_id)
 
