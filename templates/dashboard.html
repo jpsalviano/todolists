@@ -4,4 +4,23 @@
 
 {% block main %}
             <h2>Dashboard {{ user_id }}</h2>
+            <div id=user_lists>
+                {% if todo_lists %}
+                <label for="list">TodoList</label>
+                <input list="todo_lists" name="list" />
+                <datalist id="todo_lists">
+                    {% for list in todo_lists %}
+                        <option value={{ list.title }}>
+                    {% endfor %}
+                </datalist>
+                {% else %}
+                <p>You don't have any TodoLists yet!</p>
+                {% endif %}
+            </div>
+            <div id="lists_controls">
+                <button type="submit" name="create_todolist" value="create_todolist">Create a new TodoList</button>
+                {% if todo_lists %}
+                <button type="submit" name="delete_todolist" value="delete_todolist">Delete current TodoList</button>
+                {% endif %}
+            </div>
 {% endblock %}

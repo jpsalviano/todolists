@@ -41,8 +41,10 @@ class TestUserRegistration(testing.TestCase):
         result = self.simulate_post("/register", params=user_info)
         with db.conn as conn:
             with conn.cursor() as curs:
-                curs.execute("SELECT email FROM users WHERE name = 'John Smith';")
-                self.assertEqual("john12@fake.com", curs.fetchone().email)
+                curs.execute("SELECT name FROM users WHERE email = 'john12@fake.com';")
+                self.assertEqual("John Smith", curs.fetchone().name)
+                curs.execute("SELECT password FROM users WHERE email = 'john12@fake.com';")
+                self.assertTrue(bcrypt.checkpw("abc123-".encode(), curs.fetchone().password.encode()))
 
     def test_raise_exception_if_verified_email_already_in_db(self):
         user_registration.save_user_to_db("John Smith", "john12@fake.com", "abc123-")

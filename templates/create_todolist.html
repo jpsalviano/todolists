@@ -1,0 +1,10 @@
+{% block title %}Create TodoList{% endblock %}
+
+{% block main %}
+            <h2>Create TodoList</h2>
+            <form action="/create_todolist" method="post">
+                <label for="todolist_title">TodoList title:</label>
+                <input type="text" name="todolist_title">
+                <input type="submit">
+            </form>
+{% endblock %}

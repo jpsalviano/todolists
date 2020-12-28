@@ -15,6 +15,7 @@ templates_env = Environment(
 class UserRegistration:
     def on_get(self, req, resp):
         resp.content_type = "text/html"
+        print(req.get_cookie("session-token"))
         page = templates_env.get_template("register.html")
         resp.body = page.render()
 
@@ -68,7 +69,7 @@ class UserAuthentication:
     def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
-            cookie_value = user_authentication.authenticate(req.get_param("email"), req.get_param("password"))
+            cookie_value = user_authentication.authenticate_user(req.get_param("email"), req.get_param("password"))
         except user_authentication.AuthenticationError as err:
             resp.status = HTTP_401
             resp.body = err.message

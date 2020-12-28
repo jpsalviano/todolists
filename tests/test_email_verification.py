@@ -77,7 +77,7 @@ class TestEmailVerification(testing.TestCase):
         email_verification.send_email_with_token("john12@fake.com")
         email_server.send_mail.assert_called_once()
 
-    def test_email_verification_gets_correct_email_from_redis(self):
+    def test_email_verification_gets_correct_email_value_from_redis(self):
         email_verification.save_token_to_redis("111111", "john12@fake.com")
         self.assertEqual(email_verification.get_email_by_token("111111"), "john12@fake.com")
 
@@ -98,7 +98,7 @@ class TestEmailVerification(testing.TestCase):
         template = app.templates_env.get_template("successful_registration.html")
         self.assertEqual(result.text, template.render())
 
-    def test_get_error_page_if_token_entered_is_wrong(self):
+    def test_get_error_page_if_token_entered_is_wrong_or_expired(self):
         email_verification.save_token_to_redis("111111", "john12@fake.com")
         result = self.simulate_post("/email_verification", params={"token": "111112"})
         template = app.templates_env.get_template("error.html")

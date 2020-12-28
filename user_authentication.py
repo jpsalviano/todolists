@@ -9,15 +9,15 @@ class AuthenticationError(Exception):
         self.message = message
 
 
-def authenticate(email, password):
-    validate_email_password_against_db(email, password)
+def authenticate_user(email, password):
+    validate_password_against_db(email, password)
     is_user_email_verified(email)
     user_id = get_user_id(email)
     cookie_value = create_session_cookie_token()
     set_cookie_on_redis(cookie_value, user_id)
     return cookie_value
 
-def validate_email_password_against_db(email, password):
+def validate_password_against_db(email, password):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT password FROM users WHERE email = %s", [email])
@@ -55,7 +55,7 @@ def set_cookie_on_redis(cookie_value, user_id):
 def check_session_cookie(cookie_value):
     with redis_conn.conn as conn:
         try:
-            user_id = conn.get(cookie_value)
+            user_id = conn.get(cookie_value[0])
         except:
             raise AuthenticationError("Unauthorized.")
         else:
