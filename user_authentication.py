@@ -10,7 +10,7 @@ class UserAuthentication:
     def on_get(self, req, resp):
         resp.content_type = "text/html"
         try:
-            user_id = check_session_token(req.cookies)
+            user_id = check_session_token(req.cookies["session-token"])
             template = app.templates_env.get_template("dashboard.html")
             resp.body = template.render(user_id=user_id)
         except:
@@ -29,6 +29,11 @@ class UserAuthentication:
             user_id = get_user_id(req.get_param("email"))
             template = app.templates_env.get_template("dashboard.html")
             resp.body = template.render(user_id=user_id)
+
+    def on_delete(self, req, resp):
+        resp.content_type = "text/html"
+        template = app.templates_env.get_template("logout.html")
+        resp.body = template.render()
 
 
 class AuthenticationError(Exception):

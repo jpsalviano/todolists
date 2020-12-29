@@ -19,6 +19,7 @@ def create():
     app.add_route("/register", user_registration.UserRegistration())
     app.add_route("/email_verification", email_verification.EmailVerification())
     app.add_route("/login", user_authentication.UserAuthentication())
+    app.add_route("/logout", user_authentication.UserAuthentication())
     return app
 
 app = create()

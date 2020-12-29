@@ -70,9 +70,7 @@ class TestUserAuthentication(testing.TestCase):
         login = self.simulate_post("/login", params=user_auth)
         session_token = login.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
-        self.assertTrue(int(user_authentication.check_session_token(session_token)))
-        result = self.simulate_get("/login", cookies={"session-token=": session_token})
-        session_token = result.cookies["session-token"].value
+        result = self.simulate_get("/login", cookies={"session-token": session_token})
         template = app.templates_env.get_template("dashboard.html")
         self.assertEqual(result.text, template.render(user_id=user_id))
 
@@ -149,3 +147,31 @@ class TestUserAuthentication(testing.TestCase):
         }
         result = self.simulate_post("/login", params=user_auth)
         self.assertEqual(result.status, HTTP_401)
+
+    def test_user_authentication_gets_logout_page_if_cookie_is_set(self):
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "123abc-"
+        }
+        login = self.simulate_post("/login", params=user_auth)
+        session_token = login.cookies["session-token"].value
+        result = self.simulate_delete("/logout", cookies={"session-token": session_token})
+        template = app.templates_env.get_template("logout.html")
+        self.assertEqual(result.text, template.render())
+
+    def test_logout_deletes_session_cookie_on_redis(self):
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "123abc-"
+        }
+        login = self.simulate_post("/login", params=user_auth)
+        session_token = login.cookies["session-token"].value
+        user_id = user_authentication.check_session_token(session_token)
+        with redis_conn.conn as conn:
+            user_id_on_redis = conn.get(session_token).decode()
+        self.assertEqual(user_id, user_id_on_redis)
+        logout = self.simulate_delete("/logout")
+        
+
+    def test_logout_unsets_session_cookie_on_user_browser(self):
+        pass
