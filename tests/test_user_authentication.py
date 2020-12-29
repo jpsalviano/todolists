@@ -1,22 +1,23 @@
-from falcon import testing, HTTP_401
 from unittest.mock import patch
 
-from todolists import app, db, redis_conn, user_authentication, email_verification
+from todolists import app, db, redis_conn, user_authentication, user_registration, email_verification
+
+from falcon import testing, HTTP_401
 
 
 class TestUserAuthentication(testing.TestCase):
     @classmethod
     def setUpClass(cls):
         #Verified user
-        encrypted_password = app.user_registration.encrypt_password("123abc-").decode()
-        app.user_registration.save_user_to_db("John Smith", "john12@fake.com", encrypted_password)
+        encrypted_password = user_registration.encrypt_password("123abc-").decode()
+        user_registration.save_user_info_to_db("John Smith", "john12@fake.com", encrypted_password)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute(f"UPDATE users SET verified=true WHERE email='john12@fake.com'")
 
         #Unverified user
-        encrypted_password = app.user_registration.encrypt_password("-321cba").decode()
-        app.user_registration.save_user_to_db("Clark Kent", "clark6@fake.com", encrypted_password)
+        encrypted_password = user_registration.encrypt_password("-321cba").decode()
+        user_registration.save_user_info_to_db("Clark Kent", "clark6@fake.com", encrypted_password)
 
     @classmethod
     def tearDownClass(cls):
@@ -35,6 +36,17 @@ class TestUserAuthentication(testing.TestCase):
             with conn.cursor() as curs:
                 curs.execute(f"UPDATE users SET verified=false WHERE email='clark6@fake.com'")
 
+    def test_check_session_token_returns_user_id_if_cookie_exists(self):
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "123abc-"
+        }
+        doc = user_authentication.get_user_id("john12@fake.com")
+        result = self.simulate_post("/login", params=user_auth)
+        session_token = result.cookies["session-token"].value
+        user_id = user_authentication.check_session_token(session_token)
+        self.assertEqual(doc, user_id)
+
     def test_validate_email_verification_in_db(self):
         email = "john12@fake.com"
         self.assertIsNone(user_authentication.validate_email_verification(email))
@@ -42,7 +54,7 @@ class TestUserAuthentication(testing.TestCase):
             user_authentication.validate_email_verification("clark6@fake.com")
 
     def test_set_session_token_after_email_is_verified(self):
-        email_verification.save_token_to_redis("111111", "clark6@fake.com")
+        user_registration.save_token_to_redis("111111", "clark6@fake.com")
         user_id = user_authentication.get_user_id("clark6@fake.com")
         result = self.simulate_post("/email_verification", params={"token": "111111"})
         session_token = result.cookies["session-token"].value
@@ -57,16 +69,19 @@ class TestUserAuthentication(testing.TestCase):
         }
         login = self.simulate_post("/login", params=user_auth)
         session_token = login.cookies["session-token"].value
+        user_id = user_authentication.check_session_token(session_token)
         self.assertTrue(int(user_authentication.check_session_token(session_token)))
-        result = self.simulate_get("/login", headers={"Cookie": f"session-token:{session_token}"})
-        self.assertEqual(session_token, result.cookies["session-token"].value)
+        result = self.simulate_get("/login", cookies={"session-token=": session_token})
+        session_token = result.cookies["session-token"].value
+        template = app.templates_env.get_template("dashboard.html")
+        self.assertEqual(result.text, template.render(user_id=user_id))
 
     def test_get_authentication_form_page_if_no_session_token_is_set(self):
         doc = app.templates_env.get_template("login.html")
         result = self.simulate_get("/login")
         self.assertEqual(doc.render(), result.text)
 
-    @patch("todolists.app.user_authentication.validate_password_against_db")
+    @patch("todolists.user_authentication.validate_password_against_db")
     def test_validate_pass_against_db_is_called_with_submitted_form(self, validate_password_against_db):
         user_auth = {
             "email": "john12@fake.com",
@@ -107,17 +122,6 @@ class TestUserAuthentication(testing.TestCase):
             result = self.simulate_post("/login", params=user_auth)
         self.assertEqual("822c9dfbc77e", result.cookies["session-token"].value)
 
-    def test_check_session_token_returns_user_id_if_cookie_exists(self):
-        user_auth = {
-            "email": "john12@fake.com",
-            "password": "123abc-"
-        }
-        doc = user_authentication.get_user_id("john12@fake.com")
-        result = self.simulate_post("/login", params=user_auth)
-        session_token = result.cookies["session-token"].value
-        user_id = user_authentication.check_session_token(session_token)
-        self.assertEqual(doc, user_id)
-
     def test_check_session_token_raises_auth_error_if_cookie_doesnt_exist(self):
         with self.assertRaises(user_authentication.AuthenticationError) as err:
             user_authentication.check_session_token("822c9dfbc77E")
@@ -138,7 +142,7 @@ class TestUserAuthentication(testing.TestCase):
             user_authentication.validate_email_verification("clark6@fake.com")
         self.assertEqual(err.exception.message, "Your email was not verified.")
 
-    def test_app_responds_401_status_code_when_auth_error_is_raised(self):
+    def test_get_401_status_code_when_auth_error_is_raised(self):
         user_auth = {
             "email": "john12@fake.com",
             "password": "-123abc-"

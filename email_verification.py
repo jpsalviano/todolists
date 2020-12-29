@@ -1,38 +1,32 @@
-from secrets import randbelow
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from falcon import HTTP_403
+from secrets import token_hex
 
-from todolists import app, redis_conn, email_server, db
-from todolists.user_registration import ValidationError
+from todolists import app, redis_conn, db
 
 
-def create_token():
-        token = randbelow(1000000)
-        return "{:06d}".format(token)
+class EmailVerification:
+    def on_post(self, req, resp):
+        resp.content_type = "text/html"
+        try:
+            email = get_email_by_token(req.get_param("token"))
+            update_user_verified_in_db(email)
+        except ValidationError as err:
+            resp.status = HTTP_403
+            template = app.templates_env.get_template("error.html")
+            resp.body = template.render(error=err)
+        else:
+            session_token = create_session_token()
+            user_id = get_user_id(email)
+            set_session_token_on_redis(session_token, user_id)
+            resp.set_cookie("session-token", session_token)
+            template = app.templates_env.get_template("successful_registration.html")
+            resp.body = template.render()
 
-def save_token_to_redis(token, email):
-    with redis_conn.conn as conn:
-        conn.set(token, email)
-        conn.expire(token, 600)
 
-def build_email_message_sending_token_html_body(token):
-    return app.templates_env.get_template("email_message_sending_code.html").render(token=token)
+class ValidationError(Exception):
+    def __init__(self, message):
+        self.message = message
 
-def build_email_message_sending_token(token, email):
-    message = MIMEMultipart()
-    message['Subject'] = "Finish your registration on TodoLists!"
-    message['From'] = "TodoLists"
-    message['To'] = email
-    body = build_email_message_sending_token_html_body(token)
-    message.attach(MIMEText(body, "html"))
-    return message.as_string()
-
-def send_email_with_token(email):
-    token = create_token()
-    save_token_to_redis(token, email)
-    email_message = build_email_message_sending_token(token, email)
-    server_connection = email_server.connect_server()
-    email_server.send_mail(email, email_message, server_connection)
 
 def get_email_by_token(token):
     with redis_conn.conn as conn:
@@ -46,3 +40,16 @@ def update_user_verified_in_db(email):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute(f"UPDATE users SET verified=true WHERE email=%s", (email,))
+
+def create_session_token():
+    return token_hex(6)
+
+def get_user_id(email):
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute("SELECT user_id FROM users WHERE email = %s", [email])
+            return str(curs.fetchone().user_id)
+
+def set_session_token_on_redis(session_token, user_id):
+    with redis_conn.conn as conn:
+        conn.set(session_token, user_id)
