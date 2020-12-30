@@ -6,37 +6,84 @@ from falcon import testing, HTTP_401
 
 
 class TestUserAuthentication(testing.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        #Verified user
-        encrypted_password = user_registration.encrypt_password("123abc-").decode()
-        user_registration.save_user_info_to_db("John Smith", "john12@fake.com", encrypted_password)
-        with db.conn as conn:
-            with conn.cursor() as curs:
-                curs.execute(f"UPDATE users SET verified=true WHERE email='john12@fake.com'")
-
-        #Unverified user
-        encrypted_password = user_registration.encrypt_password("-321cba").decode()
-        user_registration.save_user_info_to_db("Clark Kent", "clark6@fake.com", encrypted_password)
-
-    @classmethod
-    def tearDownClass(cls):
-        with db.conn as conn:
-            with conn.cursor() as curs:
-                curs.execute("TRUNCATE users;")
-        with redis_conn.conn as conn:
-            conn.flushall()
 
     def setUp(self):
         super().setUp()
         self.app = app.create()
 
     def tearDown(self):
+        truncate_users()
+        flushall_from_redis()
+
+    @patch("todolists.user_authentication.authenticate_user")
+    def test_authenticate_user_is_called_with_submitted_form(self, authenticate_user):
+        add_verified_user()
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "123abc-"
+        }
+        self.simulate_post("/login", params=user_auth)
+        authenticate_user.assert_called_with("john12@fake.com", "123abc-")
+        
+    def test_validate_email_verification_in_db(self):
+        add_verified_user()
         with db.conn as conn:
             with conn.cursor() as curs:
-                curs.execute(f"UPDATE users SET verified=false WHERE email='clark6@fake.com'")
+                try:
+                    curs.execute("SELECT verified, password FROM users WHERE email = 'john12@fake.com'")
+                    user = curs.fetchone()
+                    email_verification = user.verified
+                    stored_password = user.password
+                except:
+                    email_verification = None
+                    stored_password = None
+        self.assertIsNone(user_authentication.validate_email_verification(email_verification))
+        add_unverified_user()
+        with db.conn as conn:
+            with conn.cursor() as curs:
+                try:
+                    curs.execute("SELECT verified, password FROM users WHERE email = 'clark6@fake.com'")
+                    user = curs.fetchone()
+                    email_verification = user.verified
+                    stored_password = user.password
+                except:
+                    email_verification = None
+                    stored_password = None
+        with self.assertRaises(user_authentication.AuthenticationError) as error:
+            user_authentication.validate_email_verification(email_verification)
+        self.assertEqual(error.exception.message, "Your email is not verified.")
+        with db.conn as conn:
+            with conn.cursor() as curs:
+                try:
+                    curs.execute("SELECT verified, password FROM users WHERE email = 'jackson5@fake.com'")
+                    user = curs.fetchone()
+                    email_verification = user.verified
+                    stored_password = user.password
+                except:
+                    email_verification = None
+                    stored_password = None
+        with self.assertRaises(user_authentication.AuthenticationError) as error:
+            user_authentication.validate_email_verification(email_verification)
+        self.assertEqual(error.exception.message, "The email entered is not registered.")
 
-    def test_check_session_token_returns_user_id_if_cookie_exists(self):
+    def test_validate_password_against_db(self):
+        add_verified_user()
+        with db.conn as conn:
+            with conn.cursor() as curs:
+                curs.execute("SELECT password FROM users WHERE email = 'john12@fake.com'")
+                stored_password = curs.fetchone().password
+        password = "123abc-"
+        self.assertIsNone(user_authentication.validate_password_against_db(password, stored_password))
+        
+    def test_get_user_id_from_db(self):
+        add_verified_user()
+        add_unverified_user()
+        id_1 = user_authentication.get_user_id("john12@fake.com")
+        id_2 = user_authentication.get_user_id("clark6@fake.com")
+        self.assertTrue(int(id_1) + 1 == int(id_2))
+        
+'''    def test_check_session_token_returns_user_id_if_cookie_exists(self):
+        add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
             "password": "123abc-"
@@ -46,12 +93,6 @@ class TestUserAuthentication(testing.TestCase):
         session_token = result.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
         self.assertEqual(doc, user_id)
-
-    def test_validate_email_verification_in_db(self):
-        email = "john12@fake.com"
-        self.assertIsNone(user_authentication.validate_email_verification(email))
-        with self.assertRaises(user_authentication.AuthenticationError) as err:
-            user_authentication.validate_email_verification("clark6@fake.com")
 
     def test_set_session_token_after_email_is_verified(self):
         user_registration.save_token_to_redis("111111", "clark6@fake.com")
@@ -78,25 +119,6 @@ class TestUserAuthentication(testing.TestCase):
         doc = app.templates_env.get_template("login.html")
         result = self.simulate_get("/login")
         self.assertEqual(doc.render(), result.text)
-
-    @patch("todolists.user_authentication.validate_password_against_db")
-    def test_validate_pass_against_db_is_called_with_submitted_form(self, validate_password_against_db):
-        user_auth = {
-            "email": "john12@fake.com",
-            "password": "123abc-"
-        }
-        self.simulate_post("/login", params=user_auth)
-        validate_password_against_db.assert_called_with("john12@fake.com", "123abc-")
-
-    def test_validate_password_against_db(self):
-        email = "john12@fake.com"
-        password = "123abc-"
-        self.assertTrue(user_authentication.validate_password_against_db(email, password))
-
-    def test_get_user_id_from_db(self):
-        id_1 = user_authentication.get_user_id("john12@fake.com")
-        id_2 = user_authentication.get_user_id("clark6@fake.com")
-        self.assertTrue(int(id_1) + 1 == int(id_2))
 
     def test_create_session_token_returns_12_char_token(self):
         token = user_authentication.create_session_token()
@@ -174,4 +196,25 @@ class TestUserAuthentication(testing.TestCase):
         
 
     def test_logout_unsets_session_cookie_on_user_browser(self):
-        pass
+        pass'''
+
+
+def add_verified_user():
+    encrypted_password = user_registration.encrypt_password("123abc-").decode()
+    user_registration.save_user_info_to_db("John Smith", "john12@fake.com", encrypted_password)
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute(f"UPDATE users SET verified=true WHERE email='john12@fake.com'")
+
+def add_unverified_user():
+    encrypted_password = user_registration.encrypt_password("-321cba").decode()
+    user_registration.save_user_info_to_db("Clark Kent", "clark6@fake.com", encrypted_password)
+
+def truncate_users():
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute("TRUNCATE users;")
+
+def flushall_from_redis():
+    with redis_conn.conn as conn:
+        conn.flushall()

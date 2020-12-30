@@ -32,9 +32,9 @@ class TestEmailVerification(testing.TestCase):
                 curs.execute("SELECT verified FROM users WHERE email='john12@fake.com'")
                 self.assertTrue(curs.fetchone().verified)
 
-    def test_create_session_token_returns_12_char_token(self):
+    def test_create_session_token_returns_64_char_token(self):
         token = email_verification.create_session_token()
-        self.assertTrue(len(token), 12)
+        self.assertEqual(len(token), 64)
         self.assertTrue(token.isalnum())
 
     def test_get_user_id_from_db(self):

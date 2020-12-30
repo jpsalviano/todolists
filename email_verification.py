@@ -42,7 +42,7 @@ def update_user_verified_in_db(email):
             curs.execute(f"UPDATE users SET verified=true WHERE email=%s", (email,))
 
 def create_session_token():
-    return token_hex(6)
+    return token_hex(32)
 
 def get_user_id(email):
     with db.conn as conn:

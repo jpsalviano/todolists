@@ -42,35 +42,33 @@ class AuthenticationError(Exception):
 
 
 def authenticate_user(email, password):
-    validate_password_against_db(email, password)
-    validate_email_verification(email)
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            try:
+                curs.execute("SELECT verified, password FROM users WHERE email = %s", [email])
+                user = curs.fetchone()
+                email_verification = user.verified
+                stored_password = user.password
+            except:
+                email_verification = None
+                stored_password = None
+    validate_email_verification(email_verification)
+    validate_password_against_db(password, stored_password)
     user_id = get_user_id(email)
     session_token = create_session_token()
     set_session_token_on_redis(session_token, user_id)
     return session_token
 
-def validate_password_against_db(email, password):
-    with db.conn as conn:
-        with conn.cursor() as curs:
-            curs.execute("SELECT password FROM users WHERE email = %s", [email])
-            try:
-                hashed = curs.fetchone().password
-            except:
-                raise AuthenticationError("The email entered is not registered.")
-    if bcrypt.checkpw(password.encode(), hashed.encode()):
-        return True
-    else:
-        raise AuthenticationError("The password entered is wrong!")
+def validate_email_verification(email_verification):
+    if email_verification == None:
+        raise AuthenticationError("The email entered is not registered.")
+    if email_verification == False:
+        raise AuthenticationError("Your email is not verified.")
 
-def validate_email_verification(email):
-    with db.conn as conn:
-        with conn.cursor() as curs:
-            curs.execute("SELECT verified FROM users WHERE email = %s", [email])
-            verified = curs.fetchone().verified
-            if verified == True:
-                pass
-            else:
-                raise AuthenticationError("Your email was not verified.")
+def validate_password_against_db(password, stored_password):
+    hashed = stored_password
+    if not bcrypt.checkpw(password.encode(), hashed.encode()):
+        raise AuthenticationError("The password entered is wrong!")
 
 def get_user_id(email):
     with db.conn as conn:
@@ -79,7 +77,7 @@ def get_user_id(email):
             return str(curs.fetchone().user_id)
 
 def create_session_token():
-    return token_hex(6)
+    return token_hex(32)
 
 def set_session_token_on_redis(session_token, user_id):
     with redis_conn.conn as conn:
