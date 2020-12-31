@@ -12,28 +12,29 @@ class UserAuthentication:
         try:
             user_id = check_session_token(req.cookies["session-token"])
             template = app.templates_env.get_template("dashboard.html")
-            resp.body = template.render(user_id=user_id)
+            resp.text = template.render(user_id=user_id)
         except:
             template = app.templates_env.get_template("login.html")
-            resp.body = template.render()
+            resp.text = template.render()
 
     def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
             session_token = authenticate_user(req.get_param("email"), req.get_param("password"))
-        except AuthenticationError as err:
+        except AuthenticationError as error:
             resp.status = HTTP_401
-            resp.body = err.message
+            template = app.templates_env.get_template("error.html")
+            resp.text = template.render(error=error)
         else:
             resp.set_cookie("session-token", session_token)
             user_id = get_user_id(req.get_param("email"))
             template = app.templates_env.get_template("dashboard.html")
-            resp.body = template.render(user_id=user_id)
+            resp.text = template.render(user_id=user_id)
 
     def on_delete(self, req, resp):
         resp.content_type = "text/html"
         template = app.templates_env.get_template("logout.html")
-        resp.body = template.render()
+        resp.text = template.render()
 
 
 class AuthenticationError(Exception):
@@ -63,7 +64,7 @@ def validate_email_verification(email_verification):
     if email_verification == None:
         raise AuthenticationError("The email entered is not registered.")
     if email_verification == False:
-        raise AuthenticationError("Your email is not verified.")
+        raise AuthenticationError("Your email hasn't been verified.")
 
 def validate_password_against_db(password, stored_password):
     hashed = stored_password

@@ -5,7 +5,7 @@ from todolists import app, db, redis_conn, user_authentication, user_registratio
 from falcon import testing, HTTP_401
 
 
-class TestUserAuthentication(testing.TestCase):
+class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
 
     def setUp(self):
         super().setUp()
@@ -15,8 +15,13 @@ class TestUserAuthentication(testing.TestCase):
         truncate_users()
         flushall_from_redis()
 
+    def test_on_get_user_authentication_renders_form_page(self):
+        doc = app.templates_env.get_template("login.html")
+        result = self.simulate_get("/login")
+        self.assertEqual(doc.render(), result.text)
+
     @patch("todolists.user_authentication.authenticate_user")
-    def test_authenticate_user_is_called_with_submitted_form(self, authenticate_user):
+    def test_on_post_authenticate_user_is_called_with_submitted_form(self, authenticate_user):
         add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
@@ -25,7 +30,7 @@ class TestUserAuthentication(testing.TestCase):
         self.simulate_post("/login", params=user_auth)
         authenticate_user.assert_called_with("john12@fake.com", "123abc-")
         
-    def test_validate_email_verification_in_db(self):
+    def test_validate_email_verification_status_on_db(self):
         add_verified_user()
         with db.conn as conn:
             with conn.cursor() as curs:
@@ -51,7 +56,7 @@ class TestUserAuthentication(testing.TestCase):
                     stored_password = None
         with self.assertRaises(user_authentication.AuthenticationError) as error:
             user_authentication.validate_email_verification(email_verification)
-        self.assertEqual(error.exception.message, "Your email is not verified.")
+        self.assertEqual(error.exception.message, "Your email hasn't been verified.")
         with db.conn as conn:
             with conn.cursor() as curs:
                 try:
@@ -66,7 +71,7 @@ class TestUserAuthentication(testing.TestCase):
             user_authentication.validate_email_verification(email_verification)
         self.assertEqual(error.exception.message, "The email entered is not registered.")
 
-    def test_validate_password_against_db(self):
+    def test_validate_password_against_stored_on_db(self):
         add_verified_user()
         with db.conn as conn:
             with conn.cursor() as curs:
@@ -75,12 +80,86 @@ class TestUserAuthentication(testing.TestCase):
         password = "123abc-"
         self.assertIsNone(user_authentication.validate_password_against_db(password, stored_password))
         
-    def test_get_user_id_from_db(self):
+    def test_get_user_id_by_user_email_from_db(self):
         add_verified_user()
         add_unverified_user()
         id_1 = user_authentication.get_user_id("john12@fake.com")
         id_2 = user_authentication.get_user_id("clark6@fake.com")
         self.assertTrue(int(id_1) + 1 == int(id_2))
+
+    def test_create_session_token_returns_64_char_token(self):
+        session_token = user_authentication.create_session_token()
+        self.assertEqual(len(session_token), 64)
+        self.assertTrue(session_token.isalnum())
+
+    def test_set_session_token_on_redis(self):
+        add_verified_user()
+        session_token = user_authentication.create_session_token()
+        user_id = user_authentication.get_user_id("john12@fake.com")
+        user_authentication.set_session_token_on_redis(session_token, user_id)
+        with redis_conn.conn as conn:
+            self.assertEqual(conn.get(session_token).decode(), user_id)
+
+    def test_authenticate_user_returns_session_token(self):
+        add_verified_user()
+        session_token = user_authentication.authenticate_user("john12@fake.com", "123abc-")
+        self.assertEqual(len(session_token), 64)
+        self.assertTrue(session_token.isalnum())
+
+    def test_on_post_user_authentication_sets_session_token_on_response(self):
+        add_verified_user()
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "123abc-"
+        }
+        session_token = user_authentication.create_session_token()
+        with patch("todolists.user_authentication.create_session_token") as create_session_token:
+            create_session_token.return_value = session_token
+            result = self.simulate_post("/login", params=user_auth)
+        self.assertEqual(session_token, result.cookies["session-token"].value)
+
+    def test_on_post_correct_user_auth_user_authentication_renders_dashboard(self):
+        add_verified_user()
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "123abc-"
+        }
+        doc = app.templates_env.get_template("dashboard.html")
+        user_id = user_authentication.get_user_id("john12@fake.com")
+        result = self.simulate_post("/login", params=user_auth)
+        self.assertEqual(doc.render(user_id=user_id), result.text)
+
+    def test_user_authentication_renders_error_page_when_unregistered_email_submitted_on_login_form(self):
+        user_auth = {
+            "email": "chico15@fake.com",
+            "password": "123abc-"
+        }
+        doc = app.templates_env.get_template("error.html")
+        error = user_authentication.AuthenticationError("The email entered is not registered.")
+        result = self.simulate_post("/login", params=user_auth)
+        self.assertEqual(doc.render(error=error), result.text)
+
+    def test_user_authentication_renders_error_page_when_unverified_email_submitted_on_login_form(self):
+        add_unverified_user()
+        user_auth = {
+            "email": "clark6@fake.com",
+            "password": "-321cba"
+        }
+        doc = app.templates_env.get_template("error.html")
+        error = user_authentication.AuthenticationError("Your email hasn't been verified.")
+        result = self.simulate_post("/login", params=user_auth)
+        self.assertEqual(doc.render(error=error), result.text)
+
+    def test_user_authentication_renders_error_page_when_wrong_password_submitted_on_login_form(self):
+        add_verified_user()
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "-321cba"
+        }
+        doc = app.templates_env.get_template("error.html")
+        error = user_authentication.AuthenticationError("The password entered is wrong!")
+        result = self.simulate_post("/login", params=user_auth)
+        self.assertEqual(doc.render(error=error), result.text)
         
 '''    def test_check_session_token_returns_user_id_if_cookie_exists(self):
         add_verified_user()
@@ -115,52 +194,12 @@ class TestUserAuthentication(testing.TestCase):
         template = app.templates_env.get_template("dashboard.html")
         self.assertEqual(result.text, template.render(user_id=user_id))
 
-    def test_get_authentication_form_page_if_no_session_token_is_set(self):
-        doc = app.templates_env.get_template("login.html")
-        result = self.simulate_get("/login")
-        self.assertEqual(doc.render(), result.text)
 
-    def test_create_session_token_returns_12_char_token(self):
-        token = user_authentication.create_session_token()
-        self.assertTrue(len(token), 12)
-        self.assertTrue(token.isalnum())
-
-    def test_set_session_token_on_redis(self):
-        session_token = user_authentication.create_session_token()
-        user_id = user_authentication.get_user_id("john12@fake.com")
-        user_authentication.set_session_token_on_redis(session_token, user_id)
-        with redis_conn.conn as conn:
-            self.assertTrue(conn.get(session_token), user_id)
-
-    def test_set_session_token_on_response(self):
-        user_auth = {
-            "email": "john12@fake.com",
-            "password": "123abc-"
-        }
-        with patch("todolists.user_authentication.create_session_token") as session_token:
-            session_token.return_value = "822c9dfbc77e"
-            result = self.simulate_post("/login", params=user_auth)
-        self.assertEqual("822c9dfbc77e", result.cookies["session-token"].value)
 
     def test_check_session_token_raises_auth_error_if_cookie_doesnt_exist(self):
         with self.assertRaises(user_authentication.AuthenticationError) as err:
             user_authentication.check_session_token("822c9dfbc77E")
         self.assertEqual(err.exception.message, "Unauthorized.")
-
-    def test_raise_auth_error_when_user_submits_wrong_email_on_login_form(self):
-        with self.assertRaises(user_authentication.AuthenticationError) as err:
-            user_authentication.validate_password_against_db("chico@fake.com", "123abc-")
-        self.assertEqual(err.exception.message, "The email entered is not registered.")
-
-    def test_raise_auth_error_when_user_submits_wrong_password_on_login_form(self):
-        with self.assertRaises(user_authentication.AuthenticationError) as err:
-            user_authentication.validate_password_against_db("john12@fake.com", "132acb+")
-        self.assertEqual(err.exception.message, "The password entered is wrong!")
-
-    def test_raise_auth_error_when_user_submits_unverified_email_on_login_form(self):
-        with self.assertRaises(user_authentication.AuthenticationError) as err:
-            user_authentication.validate_email_verification("clark6@fake.com")
-        self.assertEqual(err.exception.message, "Your email was not verified.")
 
     def test_get_401_status_code_when_auth_error_is_raised(self):
         user_auth = {

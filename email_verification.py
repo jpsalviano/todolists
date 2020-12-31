@@ -13,14 +13,14 @@ class EmailVerification:
         except ValidationError as err:
             resp.status = HTTP_403
             template = app.templates_env.get_template("error.html")
-            resp.body = template.render(error=err)
+            resp.text = template.render(error=err)
         else:
             session_token = create_session_token()
             user_id = get_user_id(email)
             set_session_token_on_redis(session_token, user_id)
             resp.set_cookie("session-token", session_token)
             template = app.templates_env.get_template("successful_registration.html")
-            resp.body = template.render()
+            resp.text = template.render()
 
 
 class ValidationError(Exception):

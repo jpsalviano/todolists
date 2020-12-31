@@ -13,7 +13,7 @@ templates_env = Environment(
 
 
 def create():
-    app = falcon.API()
+    app = falcon.App()
     app.req_options.auto_parse_form_urlencoded = True
     app.resp_options.secure_cookies_by_default = False
     app.add_route("/register", user_registration.UserRegistration())

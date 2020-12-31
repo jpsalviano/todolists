@@ -10,7 +10,7 @@ class UserRegistration:
     def on_get(self, req, resp):
         resp.content_type = "text/html"
         page = app.templates_env.get_template("register.html")
-        resp.body = page.render()
+        resp.text = page.render()
 
     def on_post(self, req, resp):
         resp.content_type = "text/html"
@@ -22,14 +22,14 @@ class UserRegistration:
         except ValidationError as error:
             resp.status = HTTP_403
             template = app.templates_env.get_template("error.html")
-            resp.body = template.render(error=error.message)
+            resp.text = template.render(error=error.message)
         except db.psycopg2.errors.UniqueViolation as error:
             resp.status = HTTP_409
             template = app.templates_env.get_template("error.html")
-            resp.body = template.render(error="Your email is already in use! Please choose another one.")
+            resp.text = template.render(error="Your email is already in use! Please choose another one.")
         else:
             template = app.templates_env.get_template("email_verification.html")
-            resp.body = template.render()
+            resp.text = template.render()
 
 
 class ValidationError(Exception):

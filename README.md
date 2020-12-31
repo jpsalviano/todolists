@@ -50,4 +50,4 @@ This is an ongoing project for practicing web development.
 ### 5 - creating/editing tasks  
 	5.1 - create task  
 	5.2 - delete task  
-	5.3 - mark as done  
+	5.3 - mark as done 
