@@ -14,6 +14,7 @@ class UserAuthentication:
             template = app.templates_env.get_template("dashboard.html")
             resp.text = template.render(user_id=user_id)
         except:
+            resp.status = HTTP_401
             template = app.templates_env.get_template("login.html")
             resp.text = template.render()
 
@@ -33,8 +34,15 @@ class UserAuthentication:
 
     def on_delete(self, req, resp):
         resp.content_type = "text/html"
-        template = app.templates_env.get_template("logout.html")
-        resp.text = template.render()
+        try:
+            unset_session_token_on_redis(req.cookies["session-token"])
+            resp.unset_cookie("session-token")
+            template = app.templates_env.get_template("logout.html")
+            resp.text = template.render()
+        except AuthenticationError:
+            resp.status = HTTP_401
+            template = app.templates_env.get_template("login.html")
+            resp.text = template.render()
 
 
 class AuthenticationError(Exception):
@@ -91,3 +99,7 @@ def check_session_token(session_token):
             return user_id.decode()
         else:
             raise AuthenticationError("Unauthorized.")
+
+def unset_session_token_on_redis(session_token):
+    with redis_conn.conn as conn:
+        return conn.delete(session_token)

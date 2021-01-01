@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from todolists import app, db, redis_conn, user_authentication, user_registration, email_verification
+from todolists import app, db, redis_conn, user_registration, user_authentication
 
 from falcon import testing, HTTP_401
 
@@ -32,6 +32,7 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         
     def test_validate_email_verification_status_on_db(self):
         add_verified_user()
+        add_unverified_user()
         with db.conn as conn:
             with conn.cursor() as curs:
                 try:
@@ -43,7 +44,6 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
                     email_verification = None
                     stored_password = None
         self.assertIsNone(user_authentication.validate_email_verification(email_verification))
-        add_unverified_user()
         with db.conn as conn:
             with conn.cursor() as curs:
                 try:
@@ -118,7 +118,7 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
             result = self.simulate_post("/login", params=user_auth)
         self.assertEqual(session_token, result.cookies["session-token"].value)
 
-    def test_on_post_correct_user_auth_user_authentication_renders_dashboard(self):
+    def test_on_post_user_authentication_renders_dashboard_with_valid_user_auth(self):
         add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
@@ -138,7 +138,8 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         error = user_authentication.AuthenticationError("The email entered is not registered.")
         result = self.simulate_post("/login", params=user_auth)
         self.assertEqual(doc.render(error=error), result.text)
-
+        self.assertEqual(result.status, HTTP_401)
+  
     def test_user_authentication_renders_error_page_when_unverified_email_submitted_on_login_form(self):
         add_unverified_user()
         user_auth = {
@@ -149,6 +150,7 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         error = user_authentication.AuthenticationError("Your email hasn't been verified.")
         result = self.simulate_post("/login", params=user_auth)
         self.assertEqual(doc.render(error=error), result.text)
+        self.assertEqual(result.status, HTTP_401)
 
     def test_user_authentication_renders_error_page_when_wrong_password_submitted_on_login_form(self):
         add_verified_user()
@@ -160,67 +162,59 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         error = user_authentication.AuthenticationError("The password entered is wrong!")
         result = self.simulate_post("/login", params=user_auth)
         self.assertEqual(doc.render(error=error), result.text)
+        self.assertEqual(result.status, HTTP_401)
+
+
+class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.app = app.create()
+
+    def tearDown(self):
+        truncate_users()
+        flushall_from_redis()
         
-'''    def test_check_session_token_returns_user_id_if_cookie_exists(self):
+    def test_check_session_token_returns_user_id_if_cookie_exists(self):
         add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
             "password": "123abc-"
         }
-        doc = user_authentication.get_user_id("john12@fake.com")
+        expected_user_id = user_authentication.get_user_id("john12@fake.com")
         result = self.simulate_post("/login", params=user_auth)
         session_token = result.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
-        self.assertEqual(doc, user_id)
+        self.assertEqual(expected_user_id, user_id)
 
-    def test_set_session_token_after_email_is_verified(self):
-        user_registration.save_token_to_redis("111111", "clark6@fake.com")
-        user_id = user_authentication.get_user_id("clark6@fake.com")
-        result = self.simulate_post("/email_verification", params={"token": "111111"})
-        session_token = result.cookies["session-token"].value
-        self.assertTrue(session_token.isalnum())
-        self.assertTrue(len(session_token), 12)
-        self.assertEqual(user_id, user_authentication.check_session_token(session_token))
-
-    def test_get_login_page_redirects_to_dashboard_if_valid_token_is_already_set(self):
+    def test_on_get_user_authentication_renders_user_dashboard_with_valid_session_token(self):
+        add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
             "password": "123abc-"
         }
+        doc = app.templates_env.get_template("dashboard.html")
         login = self.simulate_post("/login", params=user_auth)
         session_token = login.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
         result = self.simulate_get("/login", cookies={"session-token": session_token})
-        template = app.templates_env.get_template("dashboard.html")
-        self.assertEqual(result.text, template.render(user_id=user_id))
+        self.assertEqual(doc.render(user_id=user_id), result.text)
 
+    def test_check_session_token_raises_auth_error_if_invalid_session_token_set(self):
+        random_session_token = user_authentication.create_session_token()
+        with self.assertRaises(user_authentication.AuthenticationError) as error:
+            user_authentication.check_session_token(random_session_token)
+        self.assertEqual(error.exception.message, "Unauthorized.")
 
+    def test_on_get_user_authentication_renders_login_page_if_invalid_session_token_set(self):
+        doc = app.templates_env.get_template("login.html")
+        random_session_token = user_authentication.create_session_token()
+        result = self.simulate_get("/login", cookies={"session-token": random_session_token})
+        self.assertEqual(doc.render(), result.text)
+        self.assertEqual(HTTP_401, result.status)
 
-    def test_check_session_token_raises_auth_error_if_cookie_doesnt_exist(self):
-        with self.assertRaises(user_authentication.AuthenticationError) as err:
-            user_authentication.check_session_token("822c9dfbc77E")
-        self.assertEqual(err.exception.message, "Unauthorized.")
-
-    def test_get_401_status_code_when_auth_error_is_raised(self):
-        user_auth = {
-            "email": "john12@fake.com",
-            "password": "-123abc-"
-        }
-        result = self.simulate_post("/login", params=user_auth)
-        self.assertEqual(result.status, HTTP_401)
-
-    def test_user_authentication_gets_logout_page_if_cookie_is_set(self):
-        user_auth = {
-            "email": "john12@fake.com",
-            "password": "123abc-"
-        }
-        login = self.simulate_post("/login", params=user_auth)
-        session_token = login.cookies["session-token"].value
-        result = self.simulate_delete("/logout", cookies={"session-token": session_token})
-        template = app.templates_env.get_template("logout.html")
-        self.assertEqual(result.text, template.render())
-
-    def test_logout_deletes_session_cookie_on_redis(self):
+    def test_on_delete_user_authentication_deletes_session_token_from_redis(self):
+        add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
             "password": "123abc-"
@@ -228,14 +222,30 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         login = self.simulate_post("/login", params=user_auth)
         session_token = login.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
-        with redis_conn.conn as conn:
-            user_id_on_redis = conn.get(session_token).decode()
-        self.assertEqual(user_id, user_id_on_redis)
-        logout = self.simulate_delete("/logout")
-        
+        self.assertTrue(user_id.isdecimal())
+        logout = self.simulate_delete("/logout", cookies={"session-token": session_token})
+        with self.assertRaises(user_authentication.AuthenticationError) as error:
+            user_id = user_authentication.check_session_token(session_token)
+        self.assertEqual(error.exception.message, "Unauthorized.")
 
-    def test_logout_unsets_session_cookie_on_user_browser(self):
-        pass'''
+    def test_on_delete_user_authentication_renders_logout_page_if_valid_session_token_set(self):
+        add_verified_user()
+        user_auth = {
+            "email": "john12@fake.com",
+            "password": "123abc-"
+        }
+        doc = app.templates_env.get_template("logout.html")
+        login = self.simulate_post("/login", params=user_auth)
+        session_token = login.cookies["session-token"].value
+        result = self.simulate_delete("/logout", cookies={"session-token": session_token})
+        self.assertEqual(doc.render(), result.text)
+
+    def test_on_delete_user_authentication_renders_login_page_if_invalid_session_token_set(self):
+        doc = app.templates_env.get_template("login.html")
+        random_session_token = user_authentication.create_session_token()
+        result = self.simulate_get("/logout", cookies={"session-token": random_session_token})
+        self.assertEqual(doc.render(), result.text)
+        self.assertEqual(HTTP_401, result.status)
 
 
 def add_verified_user():
