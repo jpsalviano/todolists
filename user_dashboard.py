@@ -3,6 +3,8 @@ import falcon
 from todolists import app, db
 
 
-class UserDashboard:
+class UserTodoLists:
     def on_get(self, req, resp):
-        pass
+        resp.content_type = "text/html"
+        template = app.templates_env.get_template("dashboard.html")
+        resp.text = template.render(user_id="", todo_lists=[])
