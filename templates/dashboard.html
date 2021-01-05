@@ -1,28 +1,37 @@
 {% extends "base.html" %}
 
-{% block script %}{% endblock %}
-
-{% block title %}Lists{% endblock %}
+{% block title %}TodoLists Dashboard{% endblock %}
 
 {% block main %}
-            <h2>Welcome to your dashboard, {{ user_id }}!</h2>
-            <div id=user_lists>
-                {% if todo_lists %}
-                <label for="list">TodoList</label>
-                <input list="todo_lists" name="list" />
-                <datalist id="todo_lists">
-                    {% for list in todo_lists %}
-                        <option value={{ list.title }}>
+            <h2>Welcome to your dashboard, {{ user["name"] }}!</h2>
+            <div id="list-todolists">
+                {% if user["todolists"] %}
+                <label for="todolists">Pick a TodoList:</label>
+                <input list="todolists"/>
+                <select id="todolists">
+                    {% for list in user["todolists"].keys() %}
+                        <option value="{{ list.title }}" {{ list.selected }}></option>
                     {% endfor %}
-                </datalist>
+                </select>
                 {% else %}
                 <p>You don't have any TodoLists yet!</p>
                 {% endif %}
             </div>
-            <div id="lists_controls">
-                <button type="submit" name="create_todolist" value="create_todolist">Create a new TodoList</button>
-                {% if todo_lists %}
-                <button type="submit" name="delete_todolist" value="delete_todolist">Delete current TodoList</button>
+            <div id="todolists-controls">
+                <form action="/dashboard" method="post">
+                    <label for="todolist-name">TodoList name:</label>
+                    <input type="text" id="todolist-name" name="todolist-create" required></input>
+                    <button type="submit">Create</button>
+                </form>
+                {% if user["todolists"] %}
+                <form action="/dashboard" method="post">
+                    <button type="submit" name="todolist" value="delete">Delete TodoList</button>
+                </form>
                 {% endif %}
+            </div>
+            <div id=manage_account>
+                <form action="/logout" method="post">
+                    <button type="submit" name="delete-session" value="true">Logout</button>
+                </form>
             </div>
 {% endblock %}

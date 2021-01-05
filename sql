@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS lists (
     list_id serial PRIMARY KEY,
     title varchar(50) NOT NULL,
+    user_id integer NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(user_id));
 
 CREATE TABLE IF NOT EXISTS tasks (

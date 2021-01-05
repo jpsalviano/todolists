@@ -1,6 +1,8 @@
 from unittest.mock import patch
+import bcrypt
 
-from todolists import app, db, redis_conn, user_registration, user_authentication
+from todolists import app, db, redis_conn, user_authentication
+from todolists.user_dashboard import create_user_todolists_dict
 
 from falcon import testing, HTTP_401
 
@@ -127,7 +129,7 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         doc = app.templates_env.get_template("dashboard.html")
         user_id = user_authentication.get_user_id("john12@fake.com")
         result = self.simulate_post("/login", params=user_auth)
-        self.assertEqual(doc.render(user_id=user_id), result.text)
+        self.assertEqual(doc.render(user=create_user_todolists_dict(user_id)), result.text)
 
     def test_user_authentication_renders_error_page_when_unregistered_email_submitted_on_login_form(self):
         user_auth = {
@@ -198,7 +200,7 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         session_token = login.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
         result = self.simulate_get("/login", cookies={"session-token": session_token})
-        self.assertEqual(doc.render(user_id=user_id), result.text)
+        self.assertEqual(doc.render(user=create_user_todolists_dict(user_id)), result.text)
 
     def test_check_session_token_raises_auth_error_if_invalid_session_token_set(self):
         random_session_token = user_authentication.create_session_token()
@@ -249,20 +251,24 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
 
 
 def add_verified_user():
-    encrypted_password = user_registration.encrypt_password("123abc-").decode()
-    user_registration.save_user_info_to_db("John Smith", "john12@fake.com", encrypted_password)
+    hashed = bcrypt.hashpw("123abc-".encode(), bcrypt.gensalt())
     with db.conn as conn:
         with conn.cursor() as curs:
-            curs.execute(f"UPDATE users SET verified=true WHERE email='john12@fake.com'")
+            curs.execute("INSERT INTO users (name, email, password) \
+               VALUES ('John Smith', 'john12@fake.com', %s)", [hashed.decode()])
+            curs.execute("UPDATE users SET verified=true WHERE email='john12@fake.com'")
 
 def add_unverified_user():
-    encrypted_password = user_registration.encrypt_password("-321cba").decode()
-    user_registration.save_user_info_to_db("Clark Kent", "clark6@fake.com", encrypted_password)
+    hashed = bcrypt.hashpw("123abc-".encode(), bcrypt.gensalt())
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute("INSERT INTO users (name, email, password) \
+                           VALUES ('Clark Kent', 'clark6@fake.com', %s)", [hashed.decode()])
 
 def truncate_users():
     with db.conn as conn:
         with conn.cursor() as curs:
-            curs.execute("TRUNCATE users;")
+            curs.execute("TRUNCATE users CASCADE;")
 
 def flushall_from_redis():
     with redis_conn.conn as conn:

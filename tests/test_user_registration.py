@@ -20,7 +20,7 @@ class TestUserRegistration(testing.TestCase):
     def tearDown(self):
         with db.conn as conn:
             with conn.cursor() as curs:
-                curs.execute("TRUNCATE users;")
+                curs.execute("TRUNCATE users CASCADE;")
 
     def test_endpoint_status(self):
         result = self.simulate_get("/register")

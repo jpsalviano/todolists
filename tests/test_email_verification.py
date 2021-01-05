@@ -15,7 +15,7 @@ class TestEmailVerification(testing.TestCase):
             conn.flushall()
         with db.conn as conn:
             with conn.cursor() as curs:
-                curs.execute("TRUNCATE users;")
+                curs.execute("TRUNCATE users CASCADE;")
 
     def test_email_verification_gets_email_value_from_redis(self):
         encrypted_password = user_registration.encrypt_password("-321cba").decode()

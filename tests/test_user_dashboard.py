@@ -27,7 +27,7 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
     def test_user_dashboard_loads_no_lists_page(self):
         doc = app.templates_env.get_template("dashboard.html")
         result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token})
-        self.assertEqual(doc.render(user_id=self.user_id), result.text)
+        self.assertEqual(doc.render(user=user_dashboard.create_user_todolists_dict(self.user_id)), result.text)
 
     def test_create_todolist_on_db(self):
         user_dashboard.create_todolist_on_db("todolist 1", self.user_id)
@@ -41,8 +41,8 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
         user_dashboard.create_todolist_on_db("todolist 1", self.user_id)
         user_dashboard.create_todolist_on_db("todolist 2", self.user_id)
         user_todolists_dict = {
-            "user_name": "John Smith",
-            "todolists": {
+            "name": "John Smith",
+            "lists": {
                 "todolist 1": {},
                 "todolist 2": {}
             }
@@ -55,7 +55,20 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
         user_dashboard.create_todolist_on_db("todolist 4", self.user_id)
         doc = app.templates_env.get_template("dashboard.html")
         result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token})
-        self.assertEqual(doc.render(user_id=self.user_id), result.text)
+        self.assertEqual(doc.render(user=user_dashboard.create_user_todolists_dict(self.user_id)), result.text)
+        truncate_lists()
+
+    def test_user_dashboard_autoloads_first_todolist_created(self):
+        pass
+
+    def test_user_dashboard_creates_todolist_on_create_todolist_button(self):
+        user_dashboard.create_todolist_on_db("my todolist", self.user_id)
+        template = app.templates_env.get_template("dashboard.html")
+        doc = template.render(user=user_dashboard.create_user_todolists_dict(self.user_id))
+        truncate_lists()
+        result = self.simulate_post("/dashboard", cookies={"session-token": self.session_token}, 
+                                     params={"todolist-create": "my todolist"})
+        self.assertEqual(doc, result.text)
         truncate_lists()
 
 
