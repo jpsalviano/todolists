@@ -25,7 +25,8 @@ class UserTodoLists:
             if req.get_param("todolist-create"):
                 create_todolist_on_db(req.get_param("todolist-create"), user_id)
                 template = app.templates_env.get_template("dashboard.html")
-                resp.text = template.render(user=create_user_todolists_dict(user_id))
+                resp.text = template.render(user=create_user_todolists_dict(user_id,
+                                            selected=req.get_param("todolist-create")))
 
 
 class AuthenticationError(Exception):
@@ -38,7 +39,7 @@ def create_todolist_on_db(title, user_id):
         with conn.cursor() as curs:
             curs.execute("INSERT INTO lists (title, user_id) VALUES (%s, %s)", [title, user_id])
 
-def create_user_todolists_dict(user_id, **selected):
+def create_user_todolists_dict(user_id, selected=""):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT name FROM users WHERE user_id = %s", [user_id])
@@ -47,11 +48,11 @@ def create_user_todolists_dict(user_id, **selected):
             todolists = curs.fetchall()
     user_todolists_dict = {
         "name": name,
-        "todolists": {}
+        "todolists": {},
+        "selected": selected
     }
     for todolist in todolists:
-        user_todolists_dict["todolists"][todolist] = {"tasks":{}, "selected": False}
-    user_todolists_dict["todolists"][todolist]
+        user_todolists_dict["todolists"][todolist.title] = {"tasks":{}}
     return user_todolists_dict
 
 def check_session_token(session_token):
