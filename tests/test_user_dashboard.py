@@ -6,7 +6,7 @@ from falcon import testing
 from todolists import app, db, redis_conn, user_dashboard
 
 
-class TestUserTodoListsLoggedUser(testing.TestCase):
+class TestUserTodoListsLoggedInUser(testing.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -25,8 +25,14 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
         self.app = app.create()
 
     def test_user_dashboard_renders_no_lists_page(self):
+        truncate_lists()
+        todolists_user = {
+            "author": "John Smith",
+            "todolists": {},
+            "selected": ""
+        }
         template = app.templates_env.get_template("dashboard.html")
-        doc = template.render(user=user_dashboard.get_todolists_user(self.user_id))
+        doc = template.render(user=todolists_user)
         result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token})
         self.assertEqual(doc, result.text)
 
@@ -43,7 +49,7 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
         user_dashboard.create_todolist_on_db("todolist 1", self.user_id)
         user_dashboard.create_todolist_on_db("todolist 2", self.user_id)
         todolists_user = {
-            "name": "John Smith",
+            "author": "John Smith",
             "todolists": {
                 "todolist 1": {"tasks": {}},
                 "todolist 2": {"tasks": {}}
@@ -56,12 +62,12 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
     def test_user_dashboard_lists_created_todolists_if_any(self):
         truncate_lists()
         todolists_user = {
-            "name": "John Smith",
+            "author": "John Smith",
             "todolists": {
                 "todolist 3": {"tasks": {}},
                 "todolist 4": {"tasks": {}}
             },
-            "selected": ""
+            "selected": "todolist 3"
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
@@ -73,7 +79,7 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
     def test_user_dashboard_creates_todolist_when_create_todolist_button_clicked(self):
         truncate_lists()
         todolists_user = {
-            "name": "John Smith",
+            "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
             },
@@ -88,7 +94,7 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
     def test_user_dashboard_selects_just_created_todolist(self):
         truncate_lists()
         todolists_user = {
-            "name": "John Smith",
+            "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
                 "groceries": {"tasks": {}}
@@ -105,7 +111,7 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
     def test_user_dashboard_loads_todolist_selected_by_user(self):
         truncate_lists()
         todolists_user = {
-            "name": "John Smith",
+            "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
                 "groceries": {"tasks": {}}
@@ -123,7 +129,7 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
     def test_user_authentication_delete_todolist_from_db(self):
         truncate_lists()
         doc = {
-            "name": "John Smith",
+            "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
             },
@@ -138,7 +144,7 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
     def test_user_dashboard_deletes_selected_todolist(self):
         truncate_lists()
         todolists_user = {
-            "name": "John Smith",
+            "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
             },
@@ -150,6 +156,21 @@ class TestUserTodoListsLoggedUser(testing.TestCase):
         user_dashboard.create_todolist_on_db("groceries", self.user_id)
         result = self.simulate_post("/dashboard", cookies={"session-token": self.session_token},
                                     params={"todolist-delete": "groceries"})
+        self.assertEqual(doc, result.text)
+
+    def test_on_get_user_dashboard_autoselects_first_created_todolist(self):
+        truncate_lists()
+        todolists_user = {
+            "author": "John Smith",
+            "todolists": {
+                "my todolist": {"tasks": {}},
+            },
+            "selected": "my todolist"
+        }
+        template = app.templates_env.get_template("dashboard.html")
+        doc = template.render(user=todolists_user)
+        user_dashboard.create_todolist_on_db("my todolist", self.user_id)
+        result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token},)
         self.assertEqual(doc, result.text)
 
 

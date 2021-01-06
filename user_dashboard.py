@@ -9,7 +9,10 @@ class UserTodoLists:
         try:
             user_id = check_session_token(req.cookies["session-token"])
             template = app.templates_env.get_template("dashboard.html")
-            resp.text = template.render(user=get_todolists_user(user_id))
+            todolists_user = get_todolists_user(user_id)
+            if todolists_user["todolists"] != {} and todolists_user["selected"] == "":
+                todolists_user["selected"] = list(todolists_user["todolists"])[0]
+            resp.text = template.render(user=todolists_user)
         except:
             resp.status = falcon.HTTP_401
             resp.text = falcon.HTTP_401
@@ -55,7 +58,7 @@ def get_todolists_user(user_id, selected=""):
             curs.execute("SELECT title FROM lists WHERE user_id = %s", [user_id])
             todolists = curs.fetchall()
     todolists_user = {
-        "name": name,
+        "author": name,
         "todolists": {},
         "selected": selected
     }

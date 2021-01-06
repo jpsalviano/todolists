@@ -3,7 +3,7 @@
 {% block title %}TodoLists Dashboard{% endblock %}
 
 {% block main %}
-            {% set user_name = user["name"] %}
+            {% set user_name = user["author"] %}
             {% set todolists = user["todolists"] %}
             {% set selected = user["selected"] %}
             <h2>Welcome to your dashboard, {{ user_name }}!</h2>
