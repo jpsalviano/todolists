@@ -2,7 +2,7 @@ import bcrypt
 from todolists import db
 
 def add_verified_user():
-    hashed = bcrypt.hashpw("123abc-".encode(), bcrypt.gensalt())
+    hashed = bcrypt.hashpw("1".encode(), bcrypt.gensalt())
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("INSERT INTO users (name, email, password) \

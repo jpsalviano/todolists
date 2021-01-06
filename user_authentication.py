@@ -2,7 +2,7 @@ import bcrypt
 from secrets import token_hex
 
 from todolists import app, db, redis_conn
-from todolists.user_dashboard import create_user_todolists_dict
+from todolists.user_dashboard import get_todolists_user
 
 from falcon import HTTP_401
 
@@ -13,7 +13,7 @@ class UserAuthentication:
         try:
             user_id = check_session_token(req.cookies["session-token"])
             template = app.templates_env.get_template("dashboard.html")
-            resp.text = template.render(user=create_user_todolists_dict(user_id))
+            resp.text = template.render(user=get_todolists_user(user_id))
         except:
             resp.status = HTTP_401
             template = app.templates_env.get_template("login.html")
@@ -33,7 +33,7 @@ class UserAuthentication:
             resp.set_cookie("session-token", session_token)
             user_id = get_user_id(req.get_param("email"))
             template = app.templates_env.get_template("dashboard.html")
-            resp.text = template.render(user=create_user_todolists_dict(user_id))
+            resp.text = template.render(user=get_todolists_user(user_id))
 
     def on_delete(self, req, resp):
         resp.content_type = "text/html"

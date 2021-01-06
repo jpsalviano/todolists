@@ -8,13 +8,21 @@
             {% set selected = user["selected"] %}
             <h2>Welcome to your dashboard, {{ user_name }}!</h2>
             {% if todolists %}
-            <div id="list-todolists">
+            <div id="todolists-selection">
                 <label for="todolists">Your TodoLists:</label>
-                <select id="todolists" name="todolist-load">
-                {% for list in todolists %}
-                    <option {% if selected == list %}selected{% endif %}>{{ list }}</option>
-                {% endfor %}
-                </select>
+                <form action="/dashboard" method="post">
+                    <select id="todolists" name="todolist-load">
+                    {% for list in todolists %}
+                        <option {% if selected == list %}selected{% endif %}>{{ list }}</option>
+                    {% endfor %}
+                    </select>
+                    <button type="submit">Load</button>
+                </form>
+                {% if selected %}
+                <form action="/dashboard" method="post">
+                    <button type="submit" name="todolist-delete" value="{{ selected }}">Delete</button>
+                </form>
+                {% endif %}
             </div>
             {% else %}
             <p>You don't have any TodoLists yet!</p>
@@ -25,13 +33,8 @@
                     <input type="text" id="todolist-name" name="todolist-create" required></input>
                     <button type="submit">Create</button>
                 </form>
-                {% if selected %}
-                <form action="/dashboard" method="post">
-                    <button type="submit" name="todolist-delete" value="{{ selected }}">Delete TodoList</button>
-                </form>
-                {% endif %}
             </div>
-            <div id=manage_account>
+            <div id=logout>
                 <form action="/logout" method="post">
                     <button type="submit" name="delete-session" value="true">Logout</button>
                 </form>

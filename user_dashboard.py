@@ -9,7 +9,7 @@ class UserTodoLists:
         try:
             user_id = check_session_token(req.cookies["session-token"])
             template = app.templates_env.get_template("dashboard.html")
-            resp.text = template.render(user=create_user_todolists_dict(user_id))
+            resp.text = template.render(user=get_todolists_user(user_id))
         except:
             resp.status = falcon.HTTP_401
             resp.text = falcon.HTTP_401
@@ -25,8 +25,16 @@ class UserTodoLists:
             if req.get_param("todolist-create"):
                 create_todolist_on_db(req.get_param("todolist-create"), user_id)
                 template = app.templates_env.get_template("dashboard.html")
-                resp.text = template.render(user=create_user_todolists_dict(user_id,
+                resp.text = template.render(user=get_todolists_user(user_id,
                                             selected=req.get_param("todolist-create")))
+            elif req.get_param("todolist-load"):
+                template = app.templates_env.get_template("dashboard.html")
+                resp.text = template.render(user=get_todolists_user(user_id,
+                                            selected=req.get_param("todolist-load")))
+            elif req.get_param("todolist-delete"):
+                delete_todolist_from_db(req.get_param("todolist-delete"), user_id)
+                template = app.templates_env.get_template("dashboard.html")
+                resp.text = template.render(user=get_todolists_user(user_id))
 
 
 class AuthenticationError(Exception):
@@ -39,21 +47,21 @@ def create_todolist_on_db(title, user_id):
         with conn.cursor() as curs:
             curs.execute("INSERT INTO lists (title, user_id) VALUES (%s, %s)", [title, user_id])
 
-def create_user_todolists_dict(user_id, selected=""):
+def get_todolists_user(user_id, selected=""):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT name FROM users WHERE user_id = %s", [user_id])
             name = curs.fetchone().name
             curs.execute("SELECT title FROM lists WHERE user_id = %s", [user_id])
             todolists = curs.fetchall()
-    user_todolists_dict = {
+    todolists_user = {
         "name": name,
         "todolists": {},
         "selected": selected
     }
     for todolist in todolists:
-        user_todolists_dict["todolists"][todolist.title] = {"tasks":{}}
-    return user_todolists_dict
+        todolists_user["todolists"][todolist.title] = {"tasks":{}}
+    return todolists_user
 
 def check_session_token(session_token):
     with redis_conn.conn as conn:
@@ -62,3 +70,8 @@ def check_session_token(session_token):
             return user_id.decode()
         else:
             raise AuthenticationError("Unauthorized.")
+
+def delete_todolist_from_db(todolist, user_id):
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute("DELETE FROM lists WHERE user_id = %s AND title = %s", [user_id, todolist])
