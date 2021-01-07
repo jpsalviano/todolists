@@ -2,7 +2,7 @@ import bcrypt
 from secrets import token_hex
 
 from todolists import app, db, redis_conn
-from todolists.user_dashboard import get_todolists_user, UserTodoLists
+from todolists.user_dashboard import get_todolists_user_data, UserTodoLists
 
 from falcon import HTTP_401
 
@@ -32,7 +32,7 @@ class UserAuthentication:
             resp.set_cookie("session-token", session_token)
             user_id = get_user_id(req.get_param("email"))
             template = app.templates_env.get_template("dashboard.html")
-            resp.text = template.render(user=get_todolists_user(user_id))
+            resp.text = template.render(user=get_todolists_user_data(user_id))
 
     def on_delete(self, req, resp):
         resp.content_type = "text/html"
