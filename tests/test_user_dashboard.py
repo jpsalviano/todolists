@@ -42,8 +42,9 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
     def test_function_delete_todolist_from_db_by_list_id(self):
         list_id = user_dashboard.create_todolist(self.user_id, "my todolist")
         user_dashboard.delete_todolist(list_id)
-        with self.assertRaises(AttributeError) as error:
+        with self.assertRaises(ValueError) as error:
             user_dashboard.get_todolist_list_id(self.user_id, "my todolist")
+        self.assertEqual(str(error.exception), "list_id not found.")
 
     def test_function_update_todolist_title_in_db(self):
         list_id = user_dashboard.create_todolist(self.user_id, "my todolist")

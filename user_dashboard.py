@@ -26,7 +26,7 @@ class UserTodoLists:
             resp.text = falcon.HTTP_401
         else:
             if req.get_param("todolist-create"):
-                create_todolist_on_db(req.get_param("todolist-create"), user_id)
+                create_todolist(req.get_param("todolist-create"), user_id)
                 template = app.templates_env.get_template("dashboard.html")
                 resp.text = template.render(user=get_todolists_user_data(user_id,
                                             selected_todolist=req.get_param("todolist-create")))
@@ -43,6 +43,7 @@ class UserTodoLists:
 class AuthenticationError(Exception):
     def __init__(self, message):
         self.message = message
+
 
 def check_session_token(session_token):
     with redis_conn.conn as conn:
@@ -62,7 +63,10 @@ def get_todolist_list_id(user_id, list_title):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT list_id FROM lists WHERE user_id = %s AND title = %s", [user_id, list_title])
-            return curs.fetchone().list_id
+            try:
+                return curs.fetchone().list_id
+            except:
+                raise ValueError("list_id not found.")
 
 def delete_todolist(list_id):
     with db.conn as conn:

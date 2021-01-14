@@ -16,6 +16,7 @@ def create():
     app = falcon.App()
     app.req_options.auto_parse_form_urlencoded = True
     app.resp_options.secure_cookies_by_default = False
+    app.add_route("/", user_authentication.UserAuthentication())
     app.add_route("/register", user_registration.UserRegistration())
     app.add_route("/email_verification", email_verification.EmailVerification())
     app.add_route("/login", user_authentication.UserAuthentication())
