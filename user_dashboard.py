@@ -10,8 +10,6 @@ class UserTodoLists:
             user_id = check_session_token(req.cookies["session-token"])
             template = app.templates_env.get_template("dashboard.html")
             todolists_user = get_todolists_user_data(user_id)
-            if todolists_user["todolists"] != {} and todolists_user["selected_todolist"] == "":
-                todolists_user["selected_todolist"] = list(todolists_user["todolists"])[0]
             resp.text = template.render(user=todolists_user)
         except:
             resp.status = falcon.HTTP_401
@@ -68,6 +66,12 @@ def get_todolist_list_id(user_id, list_title):
             except:
                 raise ValueError("list_id not found.")
 
+def get_todolist_title(list_id):
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute("SELECT title FROM lists WHERE list_id = %s", [list_id])
+            return curs.fetchone().title
+
 def delete_todolist(list_id):
     with db.conn as conn:
         with conn.cursor() as curs:
@@ -118,7 +122,6 @@ def get_tasks_of_selected_todolist(list_id):
         with conn.cursor() as curs:
             curs.execute("SELECT task, done FROM tasks WHERE list_id = %s", [list_id])
             records = curs.fetchall()
-            print(records)
     tasks = {}
     for r in records:
         tasks[r.task] = r.done
@@ -129,7 +132,7 @@ def get_todolists_user_data(user_id, selected_todolist=None):
         with conn.cursor() as curs:
             curs.execute("SELECT name FROM users WHERE user_id = %s", [user_id])
             author = curs.fetchone().name
-            curs.execute("SELECT title FROM lists WHERE user_id = %s", [user_id])
+            curs.execute("SELECT title, list_id FROM lists WHERE user_id = %s", [user_id])
             todolists = curs.fetchall()
     todolists_user = {
         "author": author,
@@ -137,10 +140,18 @@ def get_todolists_user_data(user_id, selected_todolist=None):
         "selected_todolist": selected_todolist
     }
     if todolists:
+        list_ids = []
         for todolist in todolists:
+            list_ids.append(int(todolist.list_id))
             todolists_user["todolists"][todolist.title] = {}
-    if selected_todolist:
-        list_id = get_todolist_list_id(user_id, selected_todolist)
-        tasks = get_tasks_of_selected_todolist(list_id)
-        todolists_user["todolists"][selected_todolist] = tasks
+        if selected_todolist==None:
+            list_id = min(list_ids)
+            selected_todolist = get_todolist_title(list_id)
+            tasks = get_tasks_of_selected_todolist(list_id)
+            todolists_user["todolists"][selected_todolist] = tasks
+            todolists_user["selected_todolist"] = selected_todolist
+        else:
+            list_id = get_todolist_list_id(user_id, selected_todolist)
+            tasks = get_tasks_of_selected_todolist(list_id)
+            todolists_user["todolists"][selected_todolist] = tasks
     return todolists_user

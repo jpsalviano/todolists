@@ -39,6 +39,11 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         result = user_dashboard.get_todolist_list_id(self.user_id, "market")
         self.assertEqual(doc, result)
 
+    def test_function_get_todolist_title_by_list_id(self):
+        list_id = user_dashboard.create_todolist(self.user_id, "market")
+        result = user_dashboard.get_todolist_title(list_id)
+        self.assertEqual("market", result)
+
     def test_function_delete_todolist_from_db_by_list_id(self):
         list_id = user_dashboard.create_todolist(self.user_id, "my todolist")
         user_dashboard.delete_todolist(list_id)
@@ -168,6 +173,20 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         result = user_dashboard.get_todolists_user_data(self.user_id, "Gym")
         self.assertEqual(doc, result)
 
+    def test_function_get_todolists_user_data_selects_first_list_if_none_is_passed_as_arg(self):
+        doc = {
+            "author": "John Smith",
+            "todolists": {
+                "Market": {},
+                "Gym": {}
+            },
+            "selected_todolist": "Market"
+        }
+        user_dashboard.create_todolist(self.user_id, "Market")
+        user_dashboard.create_todolist(self.user_id, "Gym")
+        result = user_dashboard.get_todolists_user_data(self.user_id)
+        self.assertEqual(doc, result)
+
 '''    def test_user_dashboard_renders_no_lists_page_on_get(self):
         todolists_user = {
             "author": "John Smith",
@@ -179,8 +198,7 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token})
         self.assertEqual(doc, result.text)
 
- def test_user_dashboard_lists_created_todolists_if_any(self):
-        truncate_lists()
+    def test_user_dashboard_lists_created_todolists_if_any(self):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
@@ -191,8 +209,8 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
-        user_dashboard.create_todolist_on_db("todolist 3", self.user_id)
-        user_dashboard.create_todolist_on_db("todolist 4", self.user_id)
+        user_dashboard.create_todolist(self.user_id, "todolist 3")
+        user_dashboard.create_todolist(self.user_id, "todolist 4")
         result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token})
         self.assertEqual(doc, result.text)
 
