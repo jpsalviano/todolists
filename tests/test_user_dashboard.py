@@ -56,7 +56,7 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         self.assertNotEqual("my todolist", result)
         self.assertEqual("my groceries", result)
 
-    def test_function_create_task_in_todolist_on_db_returns_task_id(self):
+    def test_function_create_task_in_todolist_on_db_returns_task_id_incremented_correctly(self):
         list_id = user_dashboard.create_todolist(self.user_id, "Market")
         task_id_1 = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
         task_id_2 = user_dashboard.create_task_in_todolist(list_id, "5 beers")
@@ -72,14 +72,14 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         list_id = user_dashboard.create_todolist(self.user_id, "Market")
         task_id = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
         user_dashboard.delete_task(task_id)
-        with self.assertRaises(AttributeError) as error:
+        with self.assertRaises(ValueError) as error:
             user_dashboard.get_task_id(list_id, "10 green apples")
+        self.assertEqual(str(error.exception), "task_id not found.")
 
     def test_function_update_task_text_in_db(self):
         list_id = user_dashboard.create_todolist(self.user_id, "Market")
         task_id = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
-        new_text = "5 beers"
-        user_dashboard.update_task_text(task_id, new_text)
+        user_dashboard.update_task_text(task_id, "5 beers")
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT task FROM tasks WHERE task_id = %s",[task_id])
@@ -124,7 +124,6 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         result = user_dashboard.get_tasks_of_selected_todolist(list_id)
         self.assertEqual(doc, result)
 
-
     def test_fuction_get_empty_todolists_user_data(self):
         doc = {
             "author": "John Smith",
@@ -133,7 +132,6 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         }
         result = user_dashboard.get_todolists_user_data(self.user_id)
         self.assertEqual(doc, result)
-
 
     def test_fuction_get_todolists_user_data_with_todolists_but_no_tasks(self):
         doc = {
@@ -168,7 +166,6 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         user_dashboard.mark_task_as_done(task_id)
         user_dashboard.create_task_in_todolist(list_id, "football")
         result = user_dashboard.get_todolists_user_data(self.user_id, "Gym")
-        self.maxDiff = None
         self.assertEqual(doc, result)
 
 '''    def test_user_dashboard_renders_no_lists_page_on_get(self):

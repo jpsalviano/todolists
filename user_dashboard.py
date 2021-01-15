@@ -88,7 +88,10 @@ def get_task_id(list_id, task):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT task_id FROM tasks WHERE list_id = %s AND task = %s", [list_id, task])
-            return curs.fetchone().task_id
+            try:
+                return curs.fetchone().task_id
+            except:
+                raise ValueError("task_id not found.")
 
 def delete_task(task_id):
     with db.conn as conn:
