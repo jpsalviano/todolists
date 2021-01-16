@@ -1,11 +1,14 @@
 {% extends "base.html" %}
+{% set author = user["author"] %}
+{% set todolists = user["todolists"] %}
+{% set selected_todolist = user["selected_todolist"] %}
+{% if selected_todolist %}
+    {% set tasks = user["todolists"][selected_todolist]["tasks"] %}
+{% endif %}
 
 {% block title %}TodoLists Dashboard{% endblock %}
 
-{% block main %}
-            {% set author = user["author"] %}
-            {% set todolists = user["todolists"] %}
-            {% set selected_todolist = user["selected_todolist"] %}
+{% block nav %}
             <h2>Welcome to your dashboard, {{ author }}!</h2>
             {% if todolists %}
             <div id="todolists-selection">
@@ -39,4 +42,9 @@
                     <button type="submit" name="delete-session" value="true">Logout</button>
                 </form>
             </div>
+{% endblock %}
+{% block main %}
+    {% for task in tasks %}
+        <p>{{ task.task }}</p>
+    {% endfor %}
 {% endblock %}

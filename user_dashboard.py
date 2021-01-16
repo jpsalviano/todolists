@@ -24,16 +24,17 @@ class UserTodoLists:
             resp.text = falcon.HTTP_401
         else:
             if req.get_param("todolist-create"):
-                create_todolist(req.get_param("todolist-create"), user_id)
+                create_todolist(user_id, req.get_param("todolist-create"))
                 template = app.templates_env.get_template("dashboard.html")
                 resp.text = template.render(user=get_todolists_user_data(user_id,
                                             selected_todolist=req.get_param("todolist-create")))
             elif req.get_param("todolist-load"):
+                selected_todolist = req.get_param("todolist-load")
                 template = app.templates_env.get_template("dashboard.html")
-                resp.text = template.render(user=get_todolists_user_data(user_id,
-                                            selected_todolist=req.get_param("todolist-load")))
+                resp.text = template.render(user=get_todolists_user_data(user_id, selected_todolist))
             elif req.get_param("todolist-delete"):
-                delete_todolist_from_db(req.get_param("todolist-delete"), user_id)
+                list_id = get_todolist_list_id(user_id, req.get_param("todolist-delete"))
+                delete_todolist(list_id)
                 template = app.templates_env.get_template("dashboard.html")
                 resp.text = template.render(user=get_todolists_user_data(user_id))
 
@@ -55,7 +56,10 @@ def create_todolist(user_id, title):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("INSERT INTO lists (title, user_id) VALUES (%s, %s) RETURNING list_id", [title, user_id])
-            return curs.fetchone().list_id
+            try:
+                return curs.fetchone().list_id
+            except:
+                raise ValueError("You cannot create another TodoList with this title.")
 
 def get_todolist_list_id(user_id, list_title):
     with db.conn as conn:
@@ -75,7 +79,7 @@ def get_todolist_title(list_id):
 def delete_todolist(list_id):
     with db.conn as conn:
         with conn.cursor() as curs:
-            curs.execute("DELETE FROM lists WHERE list_id = %s", [list_id])
+            curs.execute("DELETE FROM lists WHERE list_id = %s;DELETE FROM tasks WHERE list_id IN (SELECT list_id FROM tasks); DELETE FROM tasks;", [list_id])
 
 def update_todolist_title(list_id, new_title):
     with db.conn as conn:

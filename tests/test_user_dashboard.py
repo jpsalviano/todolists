@@ -2,11 +2,12 @@ import bcrypt
 from secrets import token_hex
 
 from falcon import testing
+from psycopg2.errors import UniqueViolation
 
 from todolists import app, db, redis_conn, user_dashboard
 
 
-class TestUserTodoListsLoggedInUser(testing.TestCase):
+class TestUserDashboardCRUDFunctions(testing.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -33,6 +34,11 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
                 todolist = curs.fetchone()
         self.assertEqual(doc, todolist.list_id)
         self.assertEqual("todolist 1", todolist.title)
+
+    def test_function_create_todolist_on_db_wont_accept_same_list_title(self):
+        user_dashboard.create_todolist(self.user_id, "todolist 1")
+        with self.assertRaises(UniqueViolation) as error:
+            user_dashboard.create_todolist(self.user_id, "todolist 1")
 
     def test_function_get_todolist_list_id_by_user_id_and_list_title_from_db(self):
         doc = user_dashboard.create_todolist(self.user_id, "market")
@@ -187,11 +193,31 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         result = user_dashboard.get_todolists_user_data(self.user_id)
         self.assertEqual(doc, result)
 
-'''    def test_user_dashboard_renders_no_lists_page_on_get(self):
+
+class TestUserDashboardInterfaceHandlesTodolists(testing.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        add_verified_user()
+        cls.user_id = get_user_id("john12@fake.com")
+        cls.session_token = create_session_token()
+        set_session_token_on_redis(cls.session_token, cls.user_id)
+
+    @classmethod
+    def tearDownClass(cls):
+        flushall_from_redis()
+        truncate_users()
+
+    def setUp(self):
+        super().setUp()
+        self.app = app.create()
+        truncate_lists()
+
+    def test_user_dashboard_renders_no_lists_page_on_get(self):
         todolists_user = {
             "author": "John Smith",
             "todolists": {},
-            "selected": None
+            "selected_todolist": None
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
@@ -205,7 +231,7 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
                 "todolist 3": {"tasks": {}},
                 "todolist 4": {"tasks": {}}
             },
-            "selected": "todolist 3"
+            "selected_todolist": "todolist 3"
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
@@ -214,14 +240,27 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token})
         self.assertEqual(doc, result.text)
 
-    def test_user_dashboard_creates_todolist_when_create_todolist_button_clicked(self):
-        truncate_lists()
+    def test_user_dashboard_renders_selected_unique_created_todolist_page_on_get(self):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
             },
-            "selected": "my todolist"
+            "selected_todolist": "my todolist"
+        }
+        template = app.templates_env.get_template("dashboard.html")
+        doc = template.render(user=todolists_user)
+        user_dashboard.create_todolist(self.user_id, "my todolist")
+        result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token},)
+        self.assertEqual(doc, result.text)
+
+    def test_user_dashboard_creates_todolist_when_create_todolist_button_clicked(self):
+        todolists_user = {
+            "author": "John Smith",
+            "todolists": {
+                "my todolist": {"tasks": {}},
+            },
+            "selected_todolist": "my todolist"
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
@@ -230,71 +269,86 @@ class TestUserTodoListsLoggedInUser(testing.TestCase):
         self.assertEqual(doc, result.text)
 
     def test_user_dashboard_selects_just_created_todolist(self):
-        truncate_lists()
         todolists_user = {
             "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
                 "groceries": {"tasks": {}}
             },
-            "selected": "groceries"
+            "selected_todolist": "groceries"
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
-        user_dashboard.create_todolist_on_db("my todolist", self.user_id)
+        user_dashboard.create_todolist(self.user_id, "my todolist")
         result = self.simulate_post("/dashboard", cookies={"session-token": self.session_token},
                                     params={"todolist-create": "groceries"})
         self.assertEqual(doc, result.text)
 
     def test_user_dashboard_loads_todolist_selected_by_user(self):
-        truncate_lists()
         todolists_user = {
             "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
                 "groceries": {"tasks": {}}
             },
-            "selected": "my todolist"
+            "selected_todolist": "my todolist"
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
-        user_dashboard.create_todolist_on_db("my todolist", self.user_id)
-        user_dashboard.create_todolist_on_db("groceries", self.user_id)
+        user_dashboard.create_todolist(self.user_id, "my todolist")
+        user_dashboard.create_todolist(self.user_id, "groceries")
         result = self.simulate_post("/dashboard", cookies={"session-token": self.session_token},
                                     params={"todolist-load": "my todolist"})
         self.assertEqual(doc, result.text)
 
     def test_user_dashboard_deletes_selected_todolist(self):
-        truncate_lists()
         todolists_user = {
             "author": "John Smith",
             "todolists": {
                 "my todolist": {"tasks": {}},
             },
-            "selected": ""
+            "selected_todolist": "my todolist"
         }
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
-        user_dashboard.create_todolist_on_db("my todolist", self.user_id)
-        user_dashboard.create_todolist_on_db("groceries", self.user_id)
+        user_dashboard.create_todolist(self.user_id, "my todolist")
+        user_dashboard.create_todolist(self.user_id, "groceries")
         result = self.simulate_post("/dashboard", cookies={"session-token": self.session_token},
                                     params={"todolist-delete": "groceries"})
         self.assertEqual(doc, result.text)
 
-    def test_on_get_user_dashboard_autoselects_first_created_todolist(self):
-        truncate_lists()
-        todolists_user = {
-            "author": "John Smith",
-            "todolists": {
-                "my todolist": {"tasks": {}},
-            },
-            "selected": "my todolist"
-        }
+
+class TestUserDashboardInterfaceHandlesTasks(testing.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        add_verified_user()
+        cls.user_id = get_user_id("john12@fake.com")
+        cls.session_token = create_session_token()
+        set_session_token_on_redis(cls.session_token, cls.user_id)
+        cls.gym_list_id = user_dashboard.create_todolist(cls.user_id, "Gym")
+        cls.market_list_id = user_dashboard.create_todolist(cls.user_id, "Market")
+        cls.work_list_id = user_dashboard.create_todolist(cls.user_id, "Work")
+
+    @classmethod
+    def tearDownClass(cls):
+        flushall_from_redis()
+        truncate_tasks()
+        truncate_users()
+
+
+    def setUp(self):
+        super().setUp()
+        self.app = app.create()
+        truncate_tasks()
+
+    def test_user_dashboard_displays_tasks_of_selected_todolist(self):
+        user_dashboard.create_task_in_todolist(self.gym_list_id, "Running")
+        user_dashboard.create_task_in_todolist(self.gym_list_id, "Swimming")
+        todolists_user = user_dashboard.get_todolists_user_data(self.user_id, "Gym")
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
-        user_dashboard.create_todolist_on_db("my todolist", self.user_id)
-        result = self.simulate_get("/dashboard", cookies={"session-token": self.session_token},)
-        self.assertEqual(doc, result.text)'''
+        self.assertTrue("Running" in doc)
 
 
 def add_verified_user():
@@ -327,6 +381,11 @@ def truncate_users():
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute("TRUNCATE users CASCADE;")
+
+def truncate_tasks():
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute("TRUNCATE tasks CASCADE;")
 
 def flushall_from_redis():
     with redis_conn.conn as conn:
