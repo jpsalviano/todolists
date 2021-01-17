@@ -16,5 +16,5 @@ CREATE TABLE IF NOT EXISTS tasks (
     task_id serial PRIMARY KEY,
     task varchar(500) NOT NULL,
     done bool DEFAULT false,
-    list_id integer NOT NULL,
+    list_id integer NOT NULL
     FOREIGN KEY(list_id) REFERENCES lists(list_id));

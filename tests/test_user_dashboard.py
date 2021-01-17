@@ -351,6 +351,7 @@ class TestUserDashboardInterfaceHandlesTasks(testing.TestCase):
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=todolists_user)
         self.assertTrue("Running" in doc)
+        self.assertTrue("Swimming" in doc)
 
 
 def add_verified_user():

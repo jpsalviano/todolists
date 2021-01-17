@@ -44,9 +44,11 @@
             </div>
 {% endblock %}
 {% block main %}
-    {% if tasks %}
-        {{ tasks }}
-    {% else %}
-        <p>You don't have any tasks yet!</p>
-    {% endif %}
+            {% if selected_todolist %}
+                {% if tasks %}
+                    {% for task, done in tasks.items() %}
+                        {{ task }}: {{ done }}
+                    {% endfor %}
+                {% endif %}
+            {% endif %}
 {% endblock %}
