@@ -228,8 +228,8 @@ class TestUserDashboardInterfaceHandlesTodolists(testing.TestCase):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
-                "todolist 3": {"tasks": {}},
-                "todolist 4": {"tasks": {}}
+                "todolist 3": {},
+                "todolist 4": {}
             },
             "selected_todolist": "todolist 3"
         }
@@ -244,7 +244,7 @@ class TestUserDashboardInterfaceHandlesTodolists(testing.TestCase):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
-                "my todolist": {"tasks": {}},
+                "my todolist": {},
             },
             "selected_todolist": "my todolist"
         }
@@ -258,7 +258,7 @@ class TestUserDashboardInterfaceHandlesTodolists(testing.TestCase):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
-                "my todolist": {"tasks": {}},
+                "my todolist": {},
             },
             "selected_todolist": "my todolist"
         }
@@ -272,8 +272,8 @@ class TestUserDashboardInterfaceHandlesTodolists(testing.TestCase):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
-                "my todolist": {"tasks": {}},
-                "groceries": {"tasks": {}}
+                "my todolist": {},
+                "groceries": {}
             },
             "selected_todolist": "groceries"
         }
@@ -282,14 +282,15 @@ class TestUserDashboardInterfaceHandlesTodolists(testing.TestCase):
         user_dashboard.create_todolist(self.user_id, "my todolist")
         result = self.simulate_post("/dashboard", cookies={"session-token": self.session_token},
                                     params={"todolist-create": "groceries"})
+        self.maxDiff = None
         self.assertEqual(doc, result.text)
 
     def test_user_dashboard_loads_todolist_selected_by_user(self):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
-                "my todolist": {"tasks": {}},
-                "groceries": {"tasks": {}}
+                "my todolist": {},
+                "groceries": {}
             },
             "selected_todolist": "my todolist"
         }
@@ -299,13 +300,14 @@ class TestUserDashboardInterfaceHandlesTodolists(testing.TestCase):
         user_dashboard.create_todolist(self.user_id, "groceries")
         result = self.simulate_post("/dashboard", cookies={"session-token": self.session_token},
                                     params={"todolist-load": "my todolist"})
+        print(result.text)
         self.assertEqual(doc, result.text)
 
     def test_user_dashboard_deletes_selected_todolist(self):
         todolists_user = {
             "author": "John Smith",
             "todolists": {
-                "my todolist": {"tasks": {}},
+                "my todolist": {},
             },
             "selected_todolist": "my todolist"
         }
