@@ -45,10 +45,21 @@
 {% endblock %}
 {% block main %}
             {% if selected_todolist %}
+                <h4>{{ selected_todolist }}'s tasks</h4>
                 {% if tasks %}
                     {% for task, done in tasks.items() %}
-                        {{ task }}: {{ done }}
+                        {% if done %}
+                        <s>{{ task }}</s><br>
+                        {% else %}
+                        {{ task }}<br>
+                        {% endif %}
                     {% endfor %}
                 {% endif %}
+                <form action="/dashboard" method="post">
+                    <label for="new-task">New task:</label>
+                    <input type="hidden" id="new-task" name="selected_todolist" value="{{ selected_todolist }}"></input>
+                    <input type="text" id="new-task" name="add-task"></input>
+                    <button type="submit">Add</button>
+                </form>
             {% endif %}
 {% endblock %}

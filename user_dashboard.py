@@ -37,6 +37,13 @@ class UserTodoLists:
                 delete_todolist(list_id)
                 template = app.templates_env.get_template("dashboard.html")
                 resp.text = template.render(user=get_todolists_user_data(user_id))
+            elif req.get_param("add-task"):
+                selected_todolist = req.get_param("selected_todolist")
+                task = req.get_param("add-task")
+                list_id = get_todolist_list_id(user_id, selected_todolist)
+                task_id = create_task_in_todolist(list_id, task)
+                template = app.templates_env.get_template("dashboard.html")
+                resp.text = template.render(user=get_todolists_user_data(user_id, selected_todolist))
 
 
 class AuthenticationError(Exception):

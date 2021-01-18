@@ -344,6 +344,23 @@ class TestUserDashboardInterfaceHandlesTasks(testing.TestCase):
         self.app = app.create()
         truncate_tasks()
 
+    def test_user_dashboard_creates_task_on_selected_todolist_when_add_task_button_is_pressed(self):
+        doc = {
+            "author": "John Smith",
+            "todolists": {
+                "Gym": {
+                    "Go running for 20 minutes": False
+                },
+                "Market": {},
+                "Work": {}
+            },
+            "selected_todolist": "Gym"
+        }
+        self.simulate_post("/dashboard", cookies={"session-token": self.session_token},
+                           params={"selected_todolist": "Gym", "add-task": "Go running for 20 minutes"})
+        result = user_dashboard.get_todolists_user_data(self.user_id, "Gym")
+        self.assertEqual(doc, result)
+
     def test_user_dashboard_displays_tasks_of_selected_todolist(self):
         user_dashboard.create_task_in_todolist(self.gym_list_id, "Running")
         user_dashboard.create_task_in_todolist(self.gym_list_id, "Swimming")
