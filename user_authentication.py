@@ -2,7 +2,7 @@ import bcrypt
 from secrets import token_hex
 
 from todolists import app, db, redis_conn
-from todolists.user_dashboard import get_todolists_user_data, UserTodoLists
+from todolists.user_dashboard import get_todolists_user_data, UserDashboard
 
 from falcon import HTTP_401
 
@@ -12,7 +12,7 @@ class UserAuthentication:
         resp.content_type = "text/html"
         try:
             user_id = check_session_token(req.cookies["session-token"])
-            UserTodoLists.on_get(self, req, resp)
+            UserDashboard.on_get(self, req, resp)
         except:
             resp.status = HTTP_401
             template = app.templates_env.get_template("login.html")
@@ -20,23 +20,23 @@ class UserAuthentication:
 
     def on_post(self, req, resp):
         resp.content_type = "text/html"
-        if req.get_param("delete-session"):
-            return UserAuthentication.on_delete(self, req, resp)
         try:
             session_token = authenticate_user(req.get_param("email"), req.get_param("password"))
         except AuthenticationError as error:
             resp.status = HTTP_401
-            template = app.templates_env.get_template("error.html")
-            resp.text = template.render(error=error)
+            template = app.templates_env.get_template("login.html")
         else:
             resp.set_cookie("session-token", session_token)
             user_id = get_user_id(req.get_param("email"))
             template = app.templates_env.get_template("dashboard.html")
             resp.text = template.render(user=get_todolists_user_data(user_id))
 
-    def on_delete(self, req, resp):
+
+class UserLogout:
+    def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
+            check_session_token(req.cookies["session-token"])
             unset_session_token_on_redis(req.cookies["session-token"])
             resp.unset_cookie("session-token")
             template = app.templates_env.get_template("logout.html")

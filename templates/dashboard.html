@@ -1,64 +1,75 @@
 {% extends "base.html" %}
 {% set author = user["author"] %}
 {% set todolists = user["todolists"] %}
-{% set selected_todolist = user["selected_todolist"] %}
+{% set selected_todo_id = user["selected_todolist"] %}
+{% set selected_todolist = user["todolists"][user["selected_todolist"]] %}
 {% if selected_todolist %}
-    {% set tasks = user["todolists"][selected_todolist] %}
+    {% set tasks = user["todolists"][user["selected_todolist"]]["tasks"] %}
 {% endif %}
 
 {% block title %}Dashboard{% endblock %}
 {% block nav %}
             <h3>Welcome to your dashboard, {{ author }}!</h3>
             {% if todolists %}
-            <div id="todolists-selection">
+            <span id="todolists-selection">
                 <label for="todolists">Your TodoLists:</label>
-                <form action="/dashboard" method="post">
-                    <select id="todolists" name="todolist-load">
-                    {% for list in todolists %}
-                        <option {% if selected_todolist == list %}selected{% endif %}>{{ list }}</option>
+                <form action="/get-todolist" method="get">
+                    <select id="todolists">
+                    {% for list_id, list in todolists.items() %}
+                        <option value="{{ list_id }}" {% if selected_todo_id == list_id %}selected{% endif %}>
+                            {{ list.title }}
+                        </option>
                     {% endfor %}
                     </select>
                     <button type="submit">Load</button>
                 </form>
                 {% if selected_todolist %}
                 <form action="/dashboard" method="post">
-                    <button type="submit" name="todolist-delete" value="{{ selected_todolist }}">Delete</button>
+                    <button type="submit" name="todolist-delete" value="{{ selected_todolist.title }}">Delete</button>
                 </form>
                 {% endif %}
-            </div>
+            </span>
             {% else %}
             <p>You don't have any TodoLists yet!</p>
             {% endif %}
 
-            <div id="todolists-controls">
-                <form action="/dashboard" method="post">
+            <span id="todolists-controls">
+                <form action="/create-todolist" method="post">
                     <label for="todolist-name">New TodoList:</label>
-                    <input type="text" id="todolist-name" name="todolist-create" required></input>
+                    <input type="text" id="todolist-name" name="create-todolist" required></input>
                     <button type="submit">Create</button>
                 </form>
-            </div>
+            </span>
             <div id=logout>
                 <form action="/logout" method="post">
-                    <button type="submit" name="delete-session" value="true">Logout</button>
+                    <button type="submit">Logout</button>
                 </form>
             </div>
 {% endblock %}
 {% block main %}
             {% if selected_todolist %}
-                <h4>{{ selected_todolist }}'s tasks</h4>
+                <h4>{{ selected_todolist.title }}'s tasks</h4>
                 {% if tasks %}
                     {% for task, done in tasks.items() %}
                         {% if done %}
                         <s>{{ task }}</s><br>
                         {% else %}
-                        {{ task }}<br>
+                        {{ task }}
+                            <span>
+                                <form action="/dashboard" method="post">
+                                    <input type="hidden" name="task-mark-done" value="{{ task }}"></input>
+                                    <input type="hidden" name="selected_todolist" value="{{ selected_todolist }}"></input>
+                                    <button type="submit">done</button>
+                                </form>
+                                <br>
+                            </span>
                         {% endif %}
                     {% endfor %}
                 {% endif %}
                 <form action="/dashboard" method="post">
                     <label for="new-task">New task:</label>
                     <input type="hidden" id="new-task" name="selected_todolist" value="{{ selected_todolist }}"></input>
-                    <input type="text" id="new-task" name="add-task"></input>
+                    <input type="text" id="new-task" name="task-add"></input>
                     <button type="submit">Add</button>
                 </form>
             {% endif %}

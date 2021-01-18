@@ -20,8 +20,10 @@ def create():
     app.add_route("/register", user_registration.UserRegistration())
     app.add_route("/email_verification", email_verification.EmailVerification())
     app.add_route("/login", user_authentication.UserAuthentication())
-    app.add_route("/logout", user_authentication.UserAuthentication())
-    app.add_route("/dashboard", user_dashboard.UserTodoLists())
+    app.add_route("/logout", user_authentication.UserLogout())
+    app.add_route("/dashboard", user_dashboard.UserDashboard())
+    app.add_route("/create-todolist", user_dashboard.CreateReadTodolist())
+    app.add_route("/get-todolist", user_dashboard.CreateReadTodolist())
     return app
 
 app = create()

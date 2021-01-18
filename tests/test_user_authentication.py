@@ -2,7 +2,7 @@ from unittest.mock import patch
 import bcrypt
 
 from todolists import app, db, redis_conn, user_authentication
-from todolists.user_dashboard import get_todolists_user
+from todolists.user_dashboard import get_todolists_user_data
 
 from falcon import testing, HTTP_401
 
@@ -129,7 +129,7 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         doc = app.templates_env.get_template("dashboard.html")
         user_id = user_authentication.get_user_id("john12@fake.com")
         result = self.simulate_post("/login", params=user_auth)
-        self.assertEqual(doc.render(user=get_todolists_user(user_id)), result.text)
+        self.assertEqual(doc.render(user=get_todolists_user_data(user_id)), result.text)
 
     def test_user_authentication_renders_error_page_when_unregistered_email_submitted_on_login_form(self):
         user_auth = {
@@ -200,7 +200,7 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         session_token = login.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
         result = self.simulate_get("/login", cookies={"session-token": session_token})
-        self.assertEqual(doc.render(user=get_todolists_user(user_id)), result.text)
+        self.assertEqual(doc.render(user=get_todolists_user_data(user_id)), result.text)
 
     def test_check_session_token_raises_auth_error_if_invalid_session_token_set(self):
         random_session_token = user_authentication.create_session_token()
@@ -215,7 +215,7 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         self.assertEqual(doc.render(), result.text)
         self.assertEqual(HTTP_401, result.status)
 
-    def test_on_delete_user_authentication_deletes_session_token_from_redis(self):
+    def test_user_logout_deletes_session_token_from_redis(self):
         add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
@@ -225,12 +225,12 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         session_token = login.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
         self.assertTrue(user_id.isdecimal())
-        logout = self.simulate_delete("/logout", cookies={"session-token": session_token})
+        logout = self.simulate_post("/logout", cookies={"session-token": session_token})
         with self.assertRaises(user_authentication.AuthenticationError) as error:
             user_id = user_authentication.check_session_token(session_token)
         self.assertEqual(error.exception.message, "Unauthorized.")
 
-    def test_on_delete_user_authentication_renders_logout_page_if_valid_session_token_set(self):
+    def test_user_logout_renders_logout_page_if_valid_session_token_set(self):
         add_verified_user()
         user_auth = {
             "email": "john12@fake.com",
@@ -239,13 +239,14 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         doc = app.templates_env.get_template("logout.html")
         login = self.simulate_post("/login", params=user_auth)
         session_token = login.cookies["session-token"].value
-        result = self.simulate_delete("/logout", cookies={"session-token": session_token})
+        result = self.simulate_post("/logout", cookies={"session-token": session_token})
         self.assertEqual(doc.render(), result.text)
 
-    def test_on_delete_user_authentication_renders_login_page_if_invalid_session_token_set(self):
+    def test_user_logout_renders_login_page_if_invalid_session_token_set(self):
         doc = app.templates_env.get_template("login.html")
         random_session_token = user_authentication.create_session_token()
-        result = self.simulate_get("/logout", cookies={"session-token": random_session_token})
+        result = self.simulate_post("/logout", cookies={"session-token": random_session_token})
+        self.maxDiff = None
         self.assertEqual(doc.render(), result.text)
         self.assertEqual(HTTP_401, result.status)
 
