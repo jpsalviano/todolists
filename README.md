@@ -51,3 +51,9 @@ This is an ongoing project for practicing web development.
 	5.1 - create task  
 	5.2 - delete task  
 	5.3 - mark as done 
+
+### Perguntas a serem respondidas
+	Por que eu não estou rodando o pytest direto, em vez do módulo.
+	O que é XSS?
+	RFCs
+	The python debugger: pdb

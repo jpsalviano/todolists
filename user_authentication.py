@@ -2,7 +2,6 @@ import bcrypt
 from secrets import token_hex
 
 from todolists import app, db, redis_conn
-from todolists.user_dashboard import get_todolists_user_data, UserDashboard
 
 from falcon import HTTP_401
 
@@ -12,7 +11,8 @@ class UserAuthentication:
         resp.content_type = "text/html"
         try:
             user_id = check_session_token(req.cookies["session-token"])
-            UserDashboard.on_get(self, req, resp)
+            template = app.templates_env.get_template("successful_login.html")
+            resp.text = template.render()
         except:
             resp.status = HTTP_401
             template = app.templates_env.get_template("login.html")
@@ -24,12 +24,13 @@ class UserAuthentication:
             session_token = authenticate_user(req.get_param("email"), req.get_param("password"))
         except AuthenticationError as error:
             resp.status = HTTP_401
-            template = app.templates_env.get_template("login.html")
+            template = app.templates_env.get_template("error.html")
+            resp.text = template.render(error=error)
         else:
             resp.set_cookie("session-token", session_token)
             user_id = get_user_id(req.get_param("email"))
-            template = app.templates_env.get_template("dashboard.html")
-            resp.text = template.render(user=get_todolists_user_data(user_id))
+            template = app.templates_env.get_template("successful_login.html")
+            resp.text = template.render()
 
 
 class UserLogout:

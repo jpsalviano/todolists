@@ -4,47 +4,19 @@ from todolists import app, db, redis_conn
 
 
 class UserDashboard:
+
     def on_get(self, req, resp):
         resp.content_type = "text/html"
         try:
             user_id = check_session_token(req.cookies["session-token"])
             template = app.templates_env.get_template("dashboard.html")
-            todolists_user = get_todolists_user_data(user_id)
-            resp.text = template.render(user=todolists_user)
+            resp.text = template.render(user=get_todolists_user_data(user_id))
         except:
             resp.status = falcon.HTTP_401
             template = app.templates_env.get_template("login.html")
 
-    def on_post(self, req, resp):
-        resp.content_type = "text/html"
-        try:
-            user_id = check_session_token(req.cookies["session-token"])
-        except:
-            resp.status = falcon.HTTP_401
-            template = app.templates_env.get_template("error.html")
-            resp.text = template.render(error=falcon.HTTP_401)
-        else:
-            if req.get_param("todolist-delete"):
-                list_id = get_todolist_list_id(user_id, req.get_param("todolist-delete"))
-                delete_todolist(list_id)
-                template = app.templates_env.get_template("dashboard.html")
-                resp.text = template.render(user=get_todolists_user_data(user_id))
-            elif req.get_param("task-add"):
-                selected_todolist = req.get_param("selected_todolist")
-                task = req.get_param("task-add")
-                task_id = create_task_in_todolist(list_id, task)
-                template = app.templates_env.get_template("dashboard.html")
-                resp.text = template.render(user=get_todolists_user_data(user_id, selected_todolist))
-            elif req.get_param("task-mark-done"):
-                selected_todolist = req.get_param("selected_todolist")
-                task = req.get_param("task-mark-done")
-                task_id = get_task_id(list_id, task)
-                mark_task_as_done(task_id)
-                template = app.templates_env.get_template("dashboard.html")
-                resp.text = template.render(user=get_todolists_user_data(user_id, selected_todolist))
 
-
-class CreateReadTodolist:
+class CreateTodolist:
     def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
@@ -58,7 +30,9 @@ class CreateReadTodolist:
             resp.text = template.render(user=get_todolists_user_data(user_id,
                                         selected_todolist=list_id))
 
-    def on_get(self, req, resp):
+
+class ReadTodoList:
+    def on_post(self, req, resp):
         resp.content_type = "text/html"
         try:
             user_id = check_session_token(req.cookies["session-token"])
@@ -66,9 +40,61 @@ class CreateReadTodolist:
             resp.status = falcon.HTTP_401
             template = app.templates_env.get_template("login.html")
         else:
-            selected_todolist = req.get_param("list_id")
+            selected_todolist = int(req.get_param("get-todolist"))
             template = app.templates_env.get_template("dashboard.html")
             resp.text = template.render(user=get_todolists_user_data(user_id, selected_todolist))
+
+
+class UpdateTodoList:
+    def on_post(self, req, resp):
+        resp.content_type = "text/html"
+        try:
+            user_id = check_session_token(req.cookies["session-token"])
+        except:
+            resp.status = falcon.HTTP_401
+            template = app.templates_env.get_template("dashboard.html")
+        else:
+            selected_todolist = int(req.get_param("update-todolist"))
+            new_title = req.get_param("change-todolist-title")
+            update_todolist_title(selected_todolist, new_title)
+            template = app.templates_env.get_template("dashboard.html")
+            resp.text = template.render(user=get_todolists_user_data(user_id, selected_todolist))
+
+
+class DeleteTodoList:
+    def on_post(self, req, resp):
+        resp.content_type = "text/html"
+        try:            
+            user_id = check_session_token(req.cookies["session-token"])
+        except:
+            resp.status = falcon.HTTP_401
+            template = app.templates_env.get_template("login.html")
+        else:
+            selected_todolist = int(req.get_param("delete-todolist"))
+            delete_todolist(selected_todolist)
+            template = app.templates_env.get_template("dashboard.html")
+            resp.text = template.render(user=get_todolists_user_data(user_id))
+
+
+class CreateTask:
+    def on_post(self, req, resp):
+        resp.content_type="text/html"
+        user_id = check_session_token(req.cookies["session-token"])
+        selected_todolist = int(req.get_param("selected-todolist"))
+        new_task = req.get_param("create-task")
+        create_task_in_todolist(selected_todolist, new_task)
+        template = app.templates_env.get_template("dashboard.html")
+        resp.text = template.render(user=get_todolists_user_data(user_id, selected_todolist))
+
+
+class UpdateTask:
+    def on_post(self, req, resp):
+        resp.content_type = "text/html"
+        user_id = check_session_token(req.cookies["session-token"])
+        selected_todolist, task_id = req.get_param("mark-task-done").split(";")
+        mark_task_as_done(int(task_id))
+        template = app.templates_env.get_template("dashboard.html")
+        resp.text = template.render(user=get_todolists_user_data(user_id, int(selected_todolist)))
 
 
 class AuthenticationError(Exception):
@@ -106,7 +132,7 @@ def update_todolist_title(list_id, new_title):
 def create_task_in_todolist(list_id, task):
     with db.conn as conn:
         with conn.cursor() as curs:
-            curs.execute("INSERT INTO tasks (task, list_id) VALUES (%s, %s) RETURNING task_id", [task, list_id])
+            curs.execute("INSERT INTO tasks (list_id, task) VALUES (%s, %s) RETURNING task_id", [list_id, task])
             return curs.fetchone().task_id
 
 def delete_task(task_id):
@@ -151,11 +177,9 @@ def generate_user_data_dict(author, selected_todolist, todolists=None):
     return todolists_user_data
 
 def select_oldest_todolist_if_any(todolists_user_data):
-    if todolists_user_data["todolists"]:
-        selected_todolist = min(todolists_user_data["todolists"].keys())
-        todolists_user_data["selected_todolist"] = selected_todolist
-    else:
-        return todolists_user_data
+    selected_todolist = min(todolists_user_data["todolists"].keys())
+    todolists_user_data["selected_todolist"] = selected_todolist
+    return todolists_user_data
 
 def get_tasks_of_selected_todolist(list_id):
     with db.conn as conn:
@@ -170,8 +194,9 @@ def get_tasks_of_selected_todolist(list_id):
 def get_todolists_user_data(user_id, selected_todolist=None):
     author, todolists = get_user_name_and_todolists(user_id)
     todolists_user_data = generate_user_data_dict(author, selected_todolist, todolists)
-    if selected_todolist==None:
+    if selected_todolist==None and todolists:
         select_oldest_todolist_if_any(todolists_user_data)
+        selected_todolist = todolists_user_data["selected_todolist"]
     if selected_todolist:
         tasks = get_tasks_of_selected_todolist(selected_todolist)
         todolists_user_data["todolists"][selected_todolist]["tasks"] = tasks

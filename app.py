@@ -1,5 +1,4 @@
 import falcon
-from falcon import HTTP_401
 from jinja2 import Environment, FileSystemLoader
 
 from todolists import db, user_registration, email_verification, user_authentication, user_dashboard
@@ -22,8 +21,12 @@ def create():
     app.add_route("/login", user_authentication.UserAuthentication())
     app.add_route("/logout", user_authentication.UserLogout())
     app.add_route("/dashboard", user_dashboard.UserDashboard())
-    app.add_route("/create-todolist", user_dashboard.CreateReadTodolist())
-    app.add_route("/get-todolist", user_dashboard.CreateReadTodolist())
+    app.add_route("/create-todolist", user_dashboard.CreateTodolist())
+    app.add_route("/get-todolist", user_dashboard.ReadTodoList())
+    app.add_route("/update-todolist", user_dashboard.UpdateTodoList())
+    app.add_route("/delete-todolist", user_dashboard.DeleteTodoList())
+    app.add_route("/create-task", user_dashboard.CreateTask())
+    app.add_route("/update-task", user_dashboard.UpdateTask())
     return app
 
 app = create()

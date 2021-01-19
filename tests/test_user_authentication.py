@@ -126,10 +126,10 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
             "email": "john12@fake.com",
             "password": "123abc-"
         }
-        doc = app.templates_env.get_template("dashboard.html")
+        doc = app.templates_env.get_template("successful_login.html")
         user_id = user_authentication.get_user_id("john12@fake.com")
         result = self.simulate_post("/login", params=user_auth)
-        self.assertEqual(doc.render(user=get_todolists_user_data(user_id)), result.text)
+        self.assertEqual(doc.render(), result.text)
 
     def test_user_authentication_renders_error_page_when_unregistered_email_submitted_on_login_form(self):
         user_auth = {
@@ -195,7 +195,7 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
             "email": "john12@fake.com",
             "password": "123abc-"
         }
-        doc = app.templates_env.get_template("dashboard.html")
+        doc = app.templates_env.get_template("successful_login.html")
         login = self.simulate_post("/login", params=user_auth)
         session_token = login.cookies["session-token"].value
         user_id = user_authentication.check_session_token(session_token)
