@@ -4,7 +4,7 @@ from secrets import token_hex
 from falcon import testing
 from psycopg2.errors import UniqueViolation, ProgrammingError
 
-from todolists import app, db, redis_conn, user_dashboard
+from todolists import app, db, redis_conn, user_dashboard, user_todolists, user_tasks
 
 
 class TestUserDashboardCRUDFunctions(testing.TestCase):
@@ -28,7 +28,7 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         truncate_tasks()
 
     def test_function_create_todolist_on_db_returns_list_id(self):
-        doc = user_dashboard.create_todolist(self.user_id, "todolist 1")
+        doc = user_todolists.create_todolist(self.user_id, "todolist 1")
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT list_id, title FROM lists WHERE user_id = %s", [self.user_id])
@@ -37,13 +37,13 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual("todolist 1", todolist.title)
 
     def test_function_create_todolist_on_db_wont_accept_same_list_title(self):
-        user_dashboard.create_todolist(self.user_id, "todolist 1")
+        user_todolists.create_todolist(self.user_id, "todolist 1")
         with self.assertRaises(UniqueViolation) as error:
-            user_dashboard.create_todolist(self.user_id, "todolist 1")
+            user_todolists.create_todolist(self.user_id, "todolist 1")
 
     def test_function_delete_todolist_from_db_by_list_id(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "my todolist")
-        user_dashboard.delete_todolist(list_id)
+        list_id = user_todolists.create_todolist(self.user_id, "my todolist")
+        user_todolists.delete_todolist(list_id)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT title FROM lists WHERE list_id = %s", [list_id])
@@ -52,8 +52,8 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual(str(error.exception), "'NoneType' object has no attribute 'list_id'")
 
     def test_function_update_todolist_title_in_db(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "my todolist")
-        user_dashboard.update_todolist_title(list_id, "my groceries")
+        list_id = user_todolists.create_todolist(self.user_id, "my todolist")
+        user_todolists.update_todolist_title(list_id, "my groceries")
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT title FROM lists where list_id = %s", [list_id])
@@ -62,15 +62,15 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual("my groceries", result)
 
     def test_function_create_task_in_todolist_on_db_returns_task_id_incremented_correctly(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "Market")
-        task_id_1 = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
-        task_id_2 = user_dashboard.create_task_in_todolist(list_id, "5 beers")
+        list_id = user_todolists.create_todolist(self.user_id, "Market")
+        task_id_1 = user_tasks.create_task_in_todolist(list_id, "10 green apples")
+        task_id_2 = user_tasks.create_task_in_todolist(list_id, "5 beers")
         self.assertEqual(task_id_1, task_id_2-1)
 
     def test_function_delete_task_from_todolist_on_db(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "Market")
-        task_id = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
-        user_dashboard.delete_task(task_id)
+        list_id = user_todolists.create_todolist(self.user_id, "Market")
+        task_id = user_tasks.create_task_in_todolist(list_id, "10 green apples")
+        user_tasks.delete_task(task_id)
         self.assertTrue(task_id)
         with db.conn as conn:
             with conn.cursor() as curs:
@@ -80,9 +80,9 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual(str(error.exception), "'NoneType' object has no attribute 'task'")
 
     def test_function_update_task_text_in_db(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "Market")
-        task_id = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
-        user_dashboard.update_task_text(task_id, "5 beers")
+        list_id = user_todolists.create_todolist(self.user_id, "Market")
+        task_id = user_tasks.create_task_in_todolist(list_id, "10 green apples")
+        user_tasks.update_task_text(task_id, "5 beers")
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT task FROM tasks WHERE task_id = %s",[task_id])
@@ -91,9 +91,9 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual("5 beers", result)
 
     def test_function_mark_task_as_done_in_db(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "Market")
-        task_id = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
-        user_dashboard.mark_task_as_done(task_id)
+        list_id = user_todolists.create_todolist(self.user_id, "Market")
+        task_id = user_tasks.create_task_in_todolist(list_id, "10 green apples")
+        user_tasks.mark_task_as_done(task_id)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT done FROM tasks WHERE task_id = %s",[task_id])
@@ -101,15 +101,15 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertTrue(done)
 
     def test_function_unmark_task_as_not_done_in_db(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "Market")
-        task_id = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
-        user_dashboard.mark_task_as_done(task_id)
+        list_id = user_todolists.create_todolist(self.user_id, "Market")
+        task_id = user_tasks.create_task_in_todolist(list_id, "10 green apples")
+        user_tasks.mark_task_as_done(task_id)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT done FROM tasks WHERE task_id = %s",[task_id])
                 done = curs.fetchone().done
         self.assertTrue(done)
-        user_dashboard.unmark_task_as_done(task_id)
+        user_tasks.mark_task_as_undone(task_id)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT done FROM tasks WHERE task_id = %s",[task_id])
@@ -117,10 +117,10 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertFalse(done)
 
     def test_function_get_tasks_of_selected_todolist_from_db(self):
-        list_id = user_dashboard.create_todolist(self.user_id, "Market")
-        task_id_1 = user_dashboard.create_task_in_todolist(list_id, "10 green apples")
-        task_id_2 = user_dashboard.create_task_in_todolist(list_id, "5 beers")
-        task_id_3 = user_dashboard.create_task_in_todolist(list_id, "2 condoms")
+        list_id = user_todolists.create_todolist(self.user_id, "Market")
+        task_id_1 = user_tasks.create_task_in_todolist(list_id, "10 green apples")
+        task_id_2 = user_tasks.create_task_in_todolist(list_id, "5 beers")
+        task_id_3 = user_tasks.create_task_in_todolist(list_id, "2 condoms")
         doc = {
             task_id_1: {
                 "task": "10 green apples",
@@ -147,8 +147,8 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual(doc, result)
 
     def test_fuction_get_todolists_user_data_with_todolists_but_no_tasks(self):
-        list_id_1 = user_dashboard.create_todolist(self.user_id, "Groceries")
-        list_id_2 = user_dashboard.create_todolist(self.user_id, "Gym")
+        list_id_1 = user_todolists.create_todolist(self.user_id, "Groceries")
+        list_id_2 = user_todolists.create_todolist(self.user_id, "Gym")
         doc = {
             "author": "John Smith",
             "todolists": {
@@ -166,12 +166,12 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual(doc, result)
 
     def test_function_get_todolists_user_data_with_todolists_and_tasks(self):
-        list_id_1 = user_dashboard.create_todolist(self.user_id, "Groceries")
-        task_id_1 = user_dashboard.create_task_in_todolist(list_id_1, "beers")
-        list_id_2 = user_dashboard.create_todolist(self.user_id, "Gym")
-        task_id_2 = user_dashboard.create_task_in_todolist(list_id_2, "wrestling")
-        user_dashboard.mark_task_as_done(task_id_2)
-        task_id_3 = user_dashboard.create_task_in_todolist(list_id_2, "football")
+        list_id_1 = user_todolists.create_todolist(self.user_id, "Groceries")
+        task_id_1 = user_tasks.create_task_in_todolist(list_id_1, "beers")
+        list_id_2 = user_todolists.create_todolist(self.user_id, "Gym")
+        task_id_2 = user_tasks.create_task_in_todolist(list_id_2, "wrestling")
+        user_tasks.mark_task_as_done(task_id_2)
+        task_id_3 = user_tasks.create_task_in_todolist(list_id_2, "football")
         doc = {
             "author": "John Smith",
             "todolists": {
@@ -196,8 +196,8 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         self.assertEqual(doc, result)
 
     def test_function_get_todolists_user_data_selects_first_list_if_none_is_passed_as_arg(self):
-        list_id_1 = user_dashboard.create_todolist(self.user_id, "Market")
-        list_id_2 = user_dashboard.create_todolist(self.user_id, "Gym")
+        list_id_1 = user_todolists.create_todolist(self.user_id, "Market")
+        list_id_2 = user_todolists.create_todolist(self.user_id, "Gym")
         doc = {
             "author": "John Smith",
             "todolists": {

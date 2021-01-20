@@ -62,12 +62,18 @@
                     {% for task_id, task in tasks.items() %}
                         {% if task.done %}
                         <s>{{ task.task }}</s><br>
+                        <form action="/update-task" method="post">
+                            <button type="submit" name="update-task" value="{{ selected_todolist_id }};{{ task_id }};false">undone</button>
+                        </form>
                         {% else %}
                         {{ task.task }}<br>
                         <form action="/update-task" method="post">
-                            <button type="submit" name="mark-task-done" value="{{ selected_todolist_id }};{{ task_id }}">done</button>
+                            <button type="submit" name="update-task" value="{{ selected_todolist_id }};{{ task_id }};true">done</button>
                         </form>
                         {% endif %}
+                        <form action="/delete-task" method="post">
+                            <button type="submit" name="delete-task" value="{{ selected_todolist_id }};{{ task_id }}">delete</button>
+                        </form>
                     {% endfor %}
                 {% endif %}
                 <form action="/create-task" method="post">

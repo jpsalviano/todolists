@@ -1,7 +1,7 @@
 import falcon
 from jinja2 import Environment, FileSystemLoader
 
-from todolists import db, user_registration, email_verification, user_authentication, user_dashboard
+from todolists import db, user_registration, email_verification, user_authentication, user_dashboard, user_todolists, user_tasks
 
 
 templates_env = Environment(
@@ -21,12 +21,13 @@ def create():
     app.add_route("/login", user_authentication.UserAuthentication())
     app.add_route("/logout", user_authentication.UserLogout())
     app.add_route("/dashboard", user_dashboard.UserDashboard())
-    app.add_route("/create-todolist", user_dashboard.CreateTodolist())
-    app.add_route("/get-todolist", user_dashboard.ReadTodoList())
-    app.add_route("/update-todolist", user_dashboard.UpdateTodoList())
-    app.add_route("/delete-todolist", user_dashboard.DeleteTodoList())
-    app.add_route("/create-task", user_dashboard.CreateTask())
-    app.add_route("/update-task", user_dashboard.UpdateTask())
+    app.add_route("/create-todolist", user_todolists.CreateTodolist())
+    app.add_route("/get-todolist", user_todolists.ReadTodoList())
+    app.add_route("/update-todolist", user_todolists.UpdateTodoList())
+    app.add_route("/delete-todolist", user_todolists.DeleteTodoList())
+    app.add_route("/create-task", user_tasks.CreateTask())
+    app.add_route("/update-task", user_tasks.UpdateTask())
+    app.add_route("/delete-task", user_tasks.DeleteTask())
     return app
 
 app = create()
