@@ -2,6 +2,7 @@ import bcrypt
 from secrets import token_hex
 
 from todolists import app, db, redis_conn
+from todolists.user_authorization import check_session_token, AuthorizationError
 
 from falcon import HTTP_401
 
@@ -42,7 +43,7 @@ class UserLogout:
             resp.unset_cookie("session-token")
             template = app.templates_env.get_template("logout.html")
             resp.text = template.render()
-        except AuthenticationError:
+        except AuthorizationError:
             resp.status = HTTP_401
             resp.unset_cookie("session-token")
             template = app.templates_env.get_template("login.html")
@@ -95,14 +96,6 @@ def create_session_token():
 def set_session_token_on_redis(session_token, user_id):
     with redis_conn.conn as conn:
         conn.set(session_token, user_id)
-
-def check_session_token(session_token):
-    with redis_conn.conn as conn:
-        user_id = conn.get(session_token)
-        if user_id:
-            return user_id.decode()
-        else:
-            raise AuthenticationError("Unauthorized.")
 
 def unset_session_token_on_redis(session_token):
     with redis_conn.conn as conn:

@@ -2,6 +2,7 @@ import falcon
 
 from todolists import app, db, redis_conn
 from todolists.user_dashboard import get_todolists_user_data
+from todolists.user_authorization import check_session_token, AuthorizationError
 
 
 class CreateTodolist:
@@ -9,9 +10,13 @@ class CreateTodolist:
         resp.content_type = "text/html"
         try:
             user_id = check_session_token(req.cookies["session-token"])
-        except:
+        except AuthorizationError as error:
             resp.status = falcon.HTTP_401
-            template = app.templates_env.get_template("login.html")
+            template = app.templates_env.get_template("error.html")
+            resp.text = template.render(error=error)
+        except:
+            resp.status = falcon.HTTP_500
+            resp.text = template.render(error="Contact the website owner.")
         else:
             list_id = create_todolist(user_id, req.get_param("create-todolist"))
             template = app.templates_env.get_template("dashboard.html")
@@ -24,9 +29,13 @@ class ReadTodoList:
         resp.content_type = "text/html"
         try:
             user_id = check_session_token(req.cookies["session-token"])
-        except:
+        except AuthorizationError as error:
             resp.status = falcon.HTTP_401
-            template = app.templates_env.get_template("login.html")
+            template = app.templates_env.get_template("error.html")
+            resp.text = template.render(error=error)
+        except:
+            resp.status = falcon.HTTP_500
+            resp.text = template.render(error="Contact the website owner.")
         else:
             selected_todolist = int(req.get_param("get-todolist"))
             template = app.templates_env.get_template("dashboard.html")
@@ -39,9 +48,13 @@ class UpdateTodoList:
         resp.content_type = "text/html"
         try:
             user_id = check_session_token(req.cookies["session-token"])
-        except:
+        except AuthorizationError as error:
             resp.status = falcon.HTTP_401
-            template = app.templates_env.get_template("dashboard.html")
+            template = app.templates_env.get_template("error.html")
+            resp.text = template.render(error=error)
+        except:
+            resp.status = falcon.HTTP_500
+            resp.text = template.render(error="Contact the website owner.")
         else:
             selected_todolist = int(req.get_param("update-todolist"))
             new_title = req.get_param("change-todolist-title")
@@ -56,9 +69,13 @@ class DeleteTodoList:
         resp.content_type = "text/html"
         try:            
             user_id = check_session_token(req.cookies["session-token"])
-        except:
+        except AuthorizationError as error:
             resp.status = falcon.HTTP_401
-            template = app.templates_env.get_template("login.html")
+            template = app.templates_env.get_template("error.html")
+            resp.text = template.render(error=error)
+        except:
+            resp.status = falcon.HTTP_500
+            resp.text = template.render(error="Contact the website owner.")
         else:
             selected_todolist = int(req.get_param("delete-todolist"))
             delete_todolist(selected_todolist)
@@ -66,19 +83,6 @@ class DeleteTodoList:
             user_data = get_todolists_user_data(user_id)
             resp.text = template.render(user=user_data)
 
-
-class AuthenticationError(Exception):
-    def __init__(self, message):
-        self.message = message
-
-
-def check_session_token(session_token):
-    with redis_conn.conn as conn:
-        user_id = conn.get(session_token)
-        if user_id:
-            return user_id.decode()
-        else:
-            raise AuthenticationError("Unauthorized.")
 
 def create_todolist(user_id, title):
     with db.conn as conn:

@@ -1,6 +1,7 @@
 import falcon
 
 from todolists import app, db, redis_conn
+from todolists.user_authorization import check_session_token, AuthorizationError
 
 
 class UserDashboard:
@@ -11,23 +12,10 @@ class UserDashboard:
             template = app.templates_env.get_template("dashboard.html")
             user_data = get_todolists_user_data(user_id)
             resp.text = template.render(user=user_data)
-        except:
+        except AuthorizationError:
             resp.status = falcon.HTTP_401
             template = app.templates_env.get_template("login.html")
 
-
-class AuthenticationError(Exception):
-    def __init__(self, message):
-        self.message = message
-
-
-def check_session_token(session_token):
-    with redis_conn.conn as conn:
-        user_id = conn.get(session_token)
-        if user_id:
-            return user_id.decode()
-        else:
-            raise AuthenticationError("Unauthorized.")
 
 def get_todolists_user_data(user_id, selected_todolist=None):
     author, todolists = get_user_name_and_todolists(user_id)

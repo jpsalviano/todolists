@@ -5,4 +5,12 @@
 {% block main %}
             <h2>Error!</h2>
             <p>{{ error }}</p>
+            <form action="/login" method="get">
+                <label for="signin-button"></label>
+                <button id="signin-button" type="submit">Sign in</button>
+            </form>
+            <form action="/register" method="get">
+                <label for="signup-button"></label>
+                <button id="signup-button" type="submit">Sign Up</button>
+            </form>
 {% endblock %}

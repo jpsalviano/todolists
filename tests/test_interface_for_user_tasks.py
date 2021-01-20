@@ -171,7 +171,8 @@ class TestUserInteractionWithTasks(testing.TestCase):
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=user_data)
         result = self.simulate_post("/update-task", cookies={"session-token": self.session_token},
-                           params={"update-task": f"{self.gym_list_id};{task_id_gym_2};true"})
+                           params={"selected-todolist": self.gym_list_id, "update-task": task_id_gym_2, 
+                                   "mark-task": "true"})
         self.assertEqual(doc, result.text)
 
     def test_interface_displays_task_as_undone_when_undone_button_is_pressed(self):
@@ -209,7 +210,8 @@ class TestUserInteractionWithTasks(testing.TestCase):
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=user_data)
         result = self.simulate_post("/update-task", cookies={"session-token": self.session_token},
-                                    params={"update-task": f"{self.gym_list_id};{task_id_gym_2};false"})
+                                    params={"selected-todolist": self.gym_list_id, "update-task": task_id_gym_2,
+                                            "mark-task": "false"})
         self.assertEqual(doc, result.text)
 
     def test_interface_no_longer_shows_task_when_delete_button_is_clicked(self):
@@ -246,7 +248,7 @@ class TestUserInteractionWithTasks(testing.TestCase):
         template = app.templates_env.get_template("dashboard.html")
         doc = template.render(user=user_data)
         result = self.simulate_post("/delete-task", cookies={"session-token": self.session_token},
-                                    params={"delete-task": f"{self.gym_list_id};{task_id_gym_3}"})
+                                    params={"selected-todolist": self.gym_list_id, "delete-task": task_id_gym_3})
         self.assertEqual(doc, result.text)
 
 

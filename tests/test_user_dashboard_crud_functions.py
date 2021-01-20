@@ -93,7 +93,7 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
     def test_function_mark_task_as_done_in_db(self):
         list_id = user_todolists.create_todolist(self.user_id, "Market")
         task_id = user_tasks.create_task_in_todolist(list_id, "10 green apples")
-        user_tasks.mark_task_as_done(task_id)
+        user_tasks.mark_task(task_id, True)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT done FROM tasks WHERE task_id = %s",[task_id])
@@ -103,13 +103,13 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
     def test_function_unmark_task_as_not_done_in_db(self):
         list_id = user_todolists.create_todolist(self.user_id, "Market")
         task_id = user_tasks.create_task_in_todolist(list_id, "10 green apples")
-        user_tasks.mark_task_as_done(task_id)
+        user_tasks.mark_task(task_id, True)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT done FROM tasks WHERE task_id = %s",[task_id])
                 done = curs.fetchone().done
         self.assertTrue(done)
-        user_tasks.mark_task_as_undone(task_id)
+        user_tasks.mark_task(task_id, False)
         with db.conn as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT done FROM tasks WHERE task_id = %s",[task_id])
@@ -170,7 +170,7 @@ class TestUserDashboardCRUDFunctions(testing.TestCase):
         task_id_1 = user_tasks.create_task_in_todolist(list_id_1, "beers")
         list_id_2 = user_todolists.create_todolist(self.user_id, "Gym")
         task_id_2 = user_tasks.create_task_in_todolist(list_id_2, "wrestling")
-        user_tasks.mark_task_as_done(task_id_2)
+        user_tasks.mark_task(task_id_2, True)
         task_id_3 = user_tasks.create_task_in_todolist(list_id_2, "football")
         doc = {
             "author": "John Smith",

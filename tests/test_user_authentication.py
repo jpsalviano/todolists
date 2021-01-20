@@ -3,6 +3,7 @@ import bcrypt
 
 from todolists import app, db, redis_conn, user_authentication
 from todolists.user_dashboard import get_todolists_user_data
+from todolists.user_authorization import AuthorizationError
 
 from falcon import testing, HTTP_401
 
@@ -202,12 +203,6 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         result = self.simulate_get("/login", cookies={"session-token": session_token})
         self.assertEqual(doc.render(user=get_todolists_user_data(user_id)), result.text)
 
-    def test_check_session_token_raises_auth_error_if_invalid_session_token_set(self):
-        random_session_token = user_authentication.create_session_token()
-        with self.assertRaises(user_authentication.AuthenticationError) as error:
-            user_authentication.check_session_token(random_session_token)
-        self.assertEqual(error.exception.message, "Unauthorized.")
-
     def test_on_get_user_authentication_renders_login_page_if_invalid_session_token_set(self):
         doc = app.templates_env.get_template("login.html")
         random_session_token = user_authentication.create_session_token()
@@ -226,9 +221,9 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         user_id = user_authentication.check_session_token(session_token)
         self.assertTrue(user_id.isdecimal())
         logout = self.simulate_post("/logout", cookies={"session-token": session_token})
-        with self.assertRaises(user_authentication.AuthenticationError) as error:
+        with self.assertRaises(AuthorizationError) as error:
             user_id = user_authentication.check_session_token(session_token)
-        self.assertEqual(error.exception.message, "Unauthorized.")
+        self.assertEqual(error.exception.message, "Wrong/expired token.")
 
     def test_user_logout_renders_logout_page_if_valid_session_token_set(self):
         add_verified_user()
@@ -246,7 +241,6 @@ class TestUserAuthenticationWithPreviousSessionTokenSet(testing.TestCase):
         doc = app.templates_env.get_template("login.html")
         random_session_token = user_authentication.create_session_token()
         result = self.simulate_post("/logout", cookies={"session-token": random_session_token})
-        self.maxDiff = None
         self.assertEqual(doc.render(), result.text)
         self.assertEqual(HTTP_401, result.status)
 

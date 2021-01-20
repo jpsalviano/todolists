@@ -63,16 +63,21 @@
                         {% if task.done %}
                         <s>{{ task.task }}</s><br>
                         <form action="/update-task" method="post">
-                            <button type="submit" name="update-task" value="{{ selected_todolist_id }};{{ task_id }};false">undone</button>
+                            <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
+                            <input type="hidden" name="mark-task" value="false">
+                            <button type="submit" name="update-task" value="{{ task_id }}">undone</button>
                         </form>
                         {% else %}
                         {{ task.task }}<br>
                         <form action="/update-task" method="post">
-                            <button type="submit" name="update-task" value="{{ selected_todolist_id }};{{ task_id }};true">done</button>
+                            <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
+                            <input type="hidden" name="mark-task" value="true">
+                            <button type="submit" name="update-task" value="{{ task_id }}">done</button>
                         </form>
                         {% endif %}
                         <form action="/delete-task" method="post">
-                            <button type="submit" name="delete-task" value="{{ selected_todolist_id }};{{ task_id }}">delete</button>
+                            <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
+                            <button type="submit" name="delete-task" value="{{ task_id }}">delete</button>
                         </form>
                     {% endfor %}
                 {% endif %}
