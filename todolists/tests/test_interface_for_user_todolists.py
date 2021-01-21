@@ -207,7 +207,7 @@ def create_session_token():
     return token_hex(32)
 
 def set_session_token_on_redis(session_token, user_id):
-    with redis_conn.conn as conn:
+    with redis_conn.session_conn as conn:
         conn.set(session_token, user_id)
 
 def truncate_lists():
@@ -221,5 +221,5 @@ def truncate_users():
             curs.execute("TRUNCATE users CASCADE;")
 
 def flushall_from_redis():
-    with redis_conn.conn as conn:
+    with redis_conn.session_conn as conn:
         conn.flushall()

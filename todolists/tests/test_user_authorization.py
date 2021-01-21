@@ -26,7 +26,7 @@ class TestUserAuthorization(testing.TestCase):
 
     def test_user_authorization_raises_error_if_token_set_is_valid_but_expired(self):
         session_token = token_hex(32)
-        with redis_conn.conn as conn:
+        with redis_conn.session_conn as conn:
             conn.set(session_token, "user_id", 1)
             sleep(1)
         with self.assertRaises(user_authorization.AuthorizationError) as error:
@@ -41,9 +41,9 @@ class TestUserAuthorization(testing.TestCase):
 
 
 def set_session_token_on_redis(session_token, user_id):
-    with redis_conn.conn as conn:
+    with redis_conn.session_conn as conn:
         conn.set(session_token, user_id)
 
 def flushall_from_redis():
-    with redis_conn.conn as conn:
+    with redis_conn.session_conn as conn:
         conn.flushall()

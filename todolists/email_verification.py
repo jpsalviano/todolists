@@ -51,5 +51,5 @@ def get_user_id(email):
             return str(curs.fetchone().user_id)
 
 def set_session_token_on_redis(session_token, user_id):
-    with redis_conn.conn as conn:
+    with redis_conn.session_conn as conn:
         conn.set(session_token, user_id)

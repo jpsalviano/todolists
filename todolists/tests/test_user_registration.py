@@ -232,7 +232,7 @@ class TestUserRegistration(testing.TestCase):
         self.assertEqual(result.text, template.render())
 
     def test_get_credentials(self):
-        with open("todolists/EMAIL_", "r") as doc_file:
+        with open("EMAIL_", "r") as doc_file:
             doc = doc_file.read().split("\n")
         result = email_server.get_credentials()
         self.assertEqual(doc, result)

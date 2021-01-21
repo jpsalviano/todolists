@@ -100,7 +100,7 @@ class TestUserAuthenticationWithoutPreviousSessionTokenSet(testing.TestCase):
         session_token = user_authentication.create_session_token()
         user_id = user_authentication.get_user_id("john12@fake.com")
         user_authentication.set_session_token_on_redis(session_token, user_id)
-        with redis_conn.conn as conn:
+        with redis_conn.session_conn as conn:
             self.assertEqual(conn.get(session_token).decode(), user_id)
 
     def test_authenticate_user_returns_session_token(self):

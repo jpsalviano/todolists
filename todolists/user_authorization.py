@@ -18,7 +18,7 @@ def is_64_chars_hex(session_token):
 
 def check_session_token(session_token):
     is_64_chars_hex(session_token)
-    with redis_conn.conn as conn:
+    with redis_conn.session_conn as conn:
         user_id = conn.get(session_token)
         if user_id:
             return user_id.decode()

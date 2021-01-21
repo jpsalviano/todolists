@@ -11,7 +11,7 @@ class TestEmailVerification(testing.TestCase):
         self.app = app.create()
 
     def tearDown(self):
-        with redis_conn.conn as conn:
+        with redis_conn.session_conn as conn:
             conn.flushall()
         with db.conn as conn:
             with conn.cursor() as curs:
@@ -59,7 +59,7 @@ class TestEmailVerification(testing.TestCase):
         session_token = email_verification.create_session_token()
         user_id = email_verification.get_user_id("john12@fake.com")
         email_verification.set_session_token_on_redis(session_token, user_id)
-        with redis_conn.conn as conn:
+        with redis_conn.session_conn as conn:
             self.assertTrue(conn.get(session_token), user_id)
 
     def test_set_session_token_on_response_after_email_is_verified(self):
@@ -81,7 +81,7 @@ class TestEmailVerification(testing.TestCase):
         self.assertEqual(result.text, template.render())
 
     def test_get_error_page_and_403_status_code_when_token_entered_is_expired(self):
-        with redis_conn.conn as conn:
+        with redis_conn.session_conn as conn:
             conn.set("111111", "john12@fake.com")
             conn.expire("111111", 1)
         sleep(1)

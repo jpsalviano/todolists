@@ -1,16 +1,13 @@
-# Makefile
+#Makefile
 
 run:
-	gunicorn todolists.app:app
+	/home/joao/todolists/.venv/bin/gunicorn --reload todolists.app:app
 
-venv:
-	source .venv/bin/activate
+add-user:
+	PYTHONPATH=. /home/joao/todolists/.venv/bin/python3 ./todolists/scripts/add_verified_user.py
 
-auser:
-	PYTHONPATH=. python ./todolists/scripts/add_verified_user.py
-
-ttables:
-	PYTHONPATH=. python ./todolists/scripts/truncate_tables.py
+trunc-tables:
+	PYTHONPATH=. /home/joao/todolists/.venv/bin/python3 ./todolists/scripts/truncate_tables.py
 
 tests:
-	PYTHONPATH=. pytest ./todolists/tests/
+	PYTHONPATH=. /home/joao/todolists/.venv/bin/pytest todolists/tests/
