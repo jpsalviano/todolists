@@ -1,0 +1,5 @@
+###How does an email server work?
+https://gatefy.com/blog/what-is-mail-server/
+https://tools.ietf.org/html/rfc821.html
+https://docs.python.org/3.9/library/smtplib.html#module-smtplib
+https://docs.python.org/3.9/library/email.html#module-email

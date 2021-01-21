@@ -214,7 +214,7 @@ class TestUserRegistration(testing.TestCase):
         doc['To'] = "john12@fake.com"
         body = user_registration.build_email_message_sending_token_html_body("111111")
         doc.attach(MIMEText(body, "html"))
-        self.assertTrue("111111" in doc.as_string())
+        self.assertTrue("111111" in body)
         self.assertEqual(len(doc.as_string()), len(message))
 
     @patch("todolists.email_server.connect_server")

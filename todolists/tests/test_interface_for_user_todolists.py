@@ -98,48 +98,18 @@ class TestUserInteractionWithTodolists(testing.TestCase):
         result = self.simulate_post("/create-todolist", cookies={"session-token": self.session_token},
                                     params={"create-todolist": "groceries"})
         list_id_2 = get_todolist_id(self.user_id, "groceries")
-        todolists_user = {
-            "author": "John Smith",
-            "todolists": {
-                list_id_1: {
-                    "title": "my todolist",
-                    "tasks": {}
-                },
-                list_id_2: {
-                    "title": "groceries",
-                    "tasks": {}
-                }
-            },
-            "selected_todolist": list_id_2
-        }
+        user_data = user_dashboard.get_todolists_user_data(self.user_id, list_id_2)
         template = app.templates_env.get_template("dashboard.html")
-        doc = template.render(user=todolists_user)
+        doc = template.render(user=user_data)
         self.assertEqual(doc, result.text)
 
     def test_interface_loads_todolist_selected_by_user(self):
         list_id_1 = user_todolists.create_todolist(self.user_id, "my todolist")
         list_id_2 = user_todolists.create_todolist(self.user_id, "groceries")
         list_id_3 = user_todolists.create_todolist(self.user_id, "gym")
-        todolists_user = {
-            "author": "John Smith",
-            "todolists": {
-                list_id_1: {
-                    "title": "my todolist",
-                    "tasks": {}
-                },
-                list_id_2: {
-                    "title": "groceries",
-                    "tasks": {}
-                },
-                list_id_3: {
-                    "title": "gym",
-                    "tasks": {}
-                }
-            },
-            "selected_todolist": list_id_2
-        }
+        user_data = user_dashboard.get_todolists_user_data(self.user_id, list_id_2)
         template = app.templates_env.get_template("dashboard.html")
-        doc = template.render(user=todolists_user)
+        doc = template.render(user=user_data)
         result = self.simulate_post("/get-todolist", cookies={"session-token": self.session_token},
                                     params={"get-todolist": list_id_2})
         self.assertEqual(doc, result.text)
