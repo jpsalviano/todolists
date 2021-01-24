@@ -17,7 +17,7 @@ def create():
     app = falcon.App()
     app.req_options.auto_parse_form_urlencoded = True
     app.resp_options.secure_cookies_by_default = False
-    app.add_static_route("/styles", str(Path.cwd()/"todolists/templates/styles"))
+    app.add_static_route("/public", str(Path.cwd()/"todolists/public"))
     app.add_route("/", user_authentication.UserAuthentication())
     app.add_route("/register", user_registration.UserRegistration())
     app.add_route("/email_verification", email_verification.EmailVerification())
