@@ -2,26 +2,26 @@
 {% block title %}Sign up for free!{% endblock %}
 {% block main %}
     <div class="left-main">
-        <span class="landing-page-list-item">
+        <div class="landing-page-list-item">
             <img src="/public/icon-list-big.svg" class="icon-list-big">
             Your personal todo lists manager app
-            </span>
-        <span class="landing-page-list-item">
+            </div>
+        <div class="landing-page-list-item">
             <img src="/public/icon-list-big.svg" class="icon-list-big">
             Have multiple todolists with multiple tasks to set
-        </span>
-        <span class="landing-page-list-item">
+        </div>
+        <div class="landing-page-list-item">
             <img src="/public/icon-list-big.svg" class="icon-list-big" >
             Simple and free. Enjoy!
-        </span>
-        <span id="landing-page-drawing">
+        </div>
+        <div id="landing-page-drawing">
             <img src="/public/landing-page-drawing.svg">
-        </span>
+        </div>
     </div>
     <div id="sign-up-box">
         <p>Sign up for a free account!</p>
         <form action="/register" method="post">
-            <label for="name">Enter your fullname:</label>
+            <label for="name">Enter your nickname:</label>
             <input type="text" id="name" name="name">
             <div class="tooltip">
             <label for="email">Enter a valid email:</label>
