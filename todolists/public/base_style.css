@@ -1,13 +1,18 @@
+#page-wrap {
+     width: 700px;
+     margin: 0 auto;
+}
+
 body {
     background-color: #2D2E30;
-    position: absolute;
     padding-bottom: 3%;
+    color: white;
 }
 
 header {
     display: flex;
     flex-direction: row;
-    margin-left: 3%;
+    margin-left: 1%;
     margin-right: 3%;
 }
 
@@ -20,16 +25,21 @@ header h1 {
     font-style: normal;
     font-weight: normal;
     font-size: 60px;
-    color: white;
     display: flex;
     margin: 1%;
 }
 
+/* Index - Register */
+
 #sign-in-button {
+    position: relative;
+    margin-left: 38%;
+    margin-top: 7%;
+}
+
+#sign-in-button button {
     width: 90px;
     height: 30px;
-    position: absolute;
-    right: 3%;
     background: #F2994A;
     border-radius: 6px;
     font-family: Roboto;
@@ -52,7 +62,6 @@ main {
     font-family: 'Roboto', arial;
     font-style: italic;
     font-size: 22px;
-    color: white;
     max-width: 50%;
     margin-top: 3%;
     margin-right: 5%;
@@ -77,10 +86,9 @@ main {
     border-style: groove;
     border-color: white;
     width: 280px;
-    height: 300px;
+    height: 380px;
     border-radius: 10px;
     font-family: Roboto;
-    color: white;
     display: flex;
     flex-direction: column;
 }
@@ -91,7 +99,7 @@ main {
 
 #sign-up-box p {
     text-align: center;
-    font-size: 20px;
+    font-size: 21px;
     font-weight: bolder;
 }
 
@@ -102,16 +110,16 @@ main {
     height: 20px;
     width: 240px;
     margin-top: 1%;
-    color: white;
+    margin-bottom: 5%;
     font-family: Roboto;
-    font-weight: bold;
+    color: white;
 }
 
 #sign-up-box button {
     width: 90px;
     height: 30px;
     display: flex;
-    margin-top: 4%;
+    margin-top: 10%;
     color: #2D2E30;
     background: #F2994A;
     border-radius: 6px;
@@ -130,7 +138,6 @@ main {
     position: relative;
     display: inline-block;
     border-bottom: 1px dotted black;
-    margin-block-start: 20px;
 }
 
 .tooltip .tooltiptext {
@@ -152,3 +159,32 @@ main {
 .tooltip:hover .tooltiptext {
     visibility: visible;
 }
+
+/* Error */
+
+#error-warning {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    font-family: Roboto;
+}
+
+#error-warning button {
+    width: 90px;
+    height: 30px;
+    background: #F2994A;
+    border-radius: 6px;
+    font-family: Roboto;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 15px;
+    align-self: center;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: -0.015em;
+    color: #2D2E30;
+    margin-top: 10%;
+}
+
+/* Email Verification */
+

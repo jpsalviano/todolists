@@ -8,16 +8,20 @@
         <link href="https://fonts.googleapis.com/css2?family=Carter+One&family=Roboto&display=swap" rel="stylesheet">
         <title>TodoLists - {% block title %}{% endblock %}</title>
     </head>
-    <body>
-        <header>
-            <img src="/public/icon-logo.svg" class="logo-icon">
-            <h1>TodoLists</h1>
-            <button type="submit" id="sign-in-button">Sign in</button>
-        </header>
-        <main>
-            {% block main %}{% endblock %}
-        </main>
-        <footer>
-        </footer>
-    </body>
+        <body>
+            <div id="page-wrap">
+                <header>
+                    <img src="/public/icon-logo.svg" class="logo-icon">
+                    <h1>TodoLists</h1>
+                    <form action="/login" method="post" id="sign-in-button">
+                        <button type="submit">Sign in</button>
+                    </form>
+                </header>
+                <main>
+                    {% block main %}{% endblock %}
+                </main>
+                <footer>
+                </footer>
+            </div>
+        </body>
 </html>

@@ -9,7 +9,7 @@ from todolists import app, db, email_server, redis_conn
 class UserRegistration:
     def on_get(self, req, resp):
         resp.content_type = "text/html"
-        page = app.templates_env.get_template("register.html")
+        page = app.templates_env.get_template("index.html")
         resp.text = page.render()
 
     def on_post(self, req, resp):
@@ -42,11 +42,15 @@ def validate_user_info(user_info):
     validate_password(user_info["password_1"], user_info["password_2"])
 
 def validate_name(name):
+    if (5 < len(name)) and (len(name) < 41):
+        pass
+    else:
+        raise ValidationError("Name must have 6-40 characters.")
     for char in name:
         if char.isalpha() or char in " ":
             pass
         else:
-            raise ValidationError("Full name accepts only letters and spaces.")
+            raise ValidationError("Name must contain only letters and spaces.")
 
 def validate_password(password_1, password_2):
     if password_1 != password_2:

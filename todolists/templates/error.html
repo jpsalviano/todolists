@@ -1,16 +1,12 @@
 {% extends "base.html" %}
-
 {% block title %}Error!{% endblock %}
 
 {% block main %}
-            <h2>Error!</h2>
-            <p>{{ error }}</p>
-            <form action="/login" method="get">
-                <label for="signin-button">Try to sign in again:</label>
-                <button id="signin-button" type="submit">back</button>
-            </form>
-            <form action="/register" method="get">
-                <label for="signup-button">Not registered?</label>
-                <button id="signup-button" type="submit">Sign up</button>
-            </form>
+<div id="error-warning">
+    <h2>Error!</h2>
+    <p>{{ error }}</p>
+    <form action="/" method="get">
+        <button id="signin-button" type="submit">Go back</button>
+    </form>
+</div>
 {% endblock %}
