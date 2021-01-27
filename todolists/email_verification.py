@@ -34,7 +34,7 @@ def get_email_by_token(token):
     if email:
         return email.decode()
     else:
-        raise ValidationError("The code entered is either wrong or expired.")
+        raise ValidationError("The code entered is either wrong or expired. You will have to start your registration again.")
 
 def update_user_verified_in_db(email):
     with db.conn as conn:

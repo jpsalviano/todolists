@@ -46,7 +46,7 @@ class UserLogout:
         except AuthorizationError:
             resp.status = HTTP_401
             resp.unset_cookie("session-token")
-            template = app.templates_env.get_template("login.html")
+            template = app.templates_env.get_template("index.html")
             resp.text = template.render()
 
 

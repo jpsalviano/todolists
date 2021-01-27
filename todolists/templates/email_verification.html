@@ -1,14 +1,22 @@
 {% extends "base.html" %}
 
+{% block header %}
+<header>
+    <img src="/public/icon-logo.svg" class="logo-icon">
+    <h1>TodoLists</h1>
+</header>
+{% endblock %}
+
 {% block title %}E-mail verification{% endblock %}
 
 {% block main %}
-            <h2>Finish registration</h2>
-            <p>A code was sent to your e-mail, enter it below:</p>
-            <form action="/email_verification" method="post">
-                <label for="token">6-digit code</label>
-                <input type="number" max="999999" id="email_token" name="token"><br>
-                <button type="submit">OK</button>
-            </form>
-            <p>This code will expire in 10 minutes.</p>
+<div id="email-verification">
+    <h2>Finish your registration</h2>
+    <p>A code was sent to your e-mail. It will expire in 10 minutes. Enter it below so you can finish your registration:</p>
+    <form action="/email_verification" method="post" id="email_token">
+        <label for="token">6-digit code</label>
+        <input type="number" max="999999" name="token"><br>
+        <button type="submit">OK</button>
+    </form>
+</div>
 {% endblock %}

@@ -2,10 +2,19 @@
 
 {% block title %}Success!{% endblock %}
 
+{% block header %}
+<header>
+    <img src="/public/icon-logo.svg" class="logo-icon">
+    <h1>TodoLists</h1>
+</header>
+{% endblock %}
+
 {% block main %}
-            <h2>Your registration was successful!</h2>
-            <p>Click on the button below to start creating your TodoLists</p>
-            <form action="/dashboard" method="get">
-                <button type="submit">Go to dashboard</button>
-            </form>
+<div id="email-verification">
+    <h2>Your registration was successful!</h2>
+    <p>Click on the button below to start creating your TodoLists</p>
+    <form action="/dashboard" method="get">
+        <button type="submit">Go to dashboard</button>
+    </form>
+</div>
 {% endblock %}
