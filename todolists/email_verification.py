@@ -10,10 +10,10 @@ class EmailVerification:
         try:
             email = get_email_by_token(req.get_param("token"))
             update_user_verified_in_db(email)
-        except ValidationError as err:
+        except ValidationError as error:
             resp.status = HTTP_403
             template = app.templates_env.get_template("error.html")
-            resp.text = template.render(error=err)
+            resp.text = template.render(error=error)
         else:
             session_token = create_session_token()
             user_id = get_user_id(email)
@@ -27,6 +27,10 @@ class ValidationError(Exception):
     def __init__(self, message):
         self.message = message
 
+class EmailVerificationError(Exception):
+    def __init__(self, message):
+        self.message = message
+
 
 def get_email_by_token(token):
     with redis_conn.conn as conn:
@@ -34,12 +38,17 @@ def get_email_by_token(token):
     if email:
         return email.decode()
     else:
-        raise ValidationError("The code entered is either wrong or expired. You will have to start your registration again.")
+        raise EmailVerificationError("The code entered is either wrong or expired. Let's go back and try again.")
 
 def update_user_verified_in_db(email):
     with db.conn as conn:
         with conn.cursor() as curs:
             curs.execute(f"UPDATE users SET verified=true WHERE email=%s", (email,))
+
+def delete_email_from_db(email):
+    with db.conn as conn:
+        with conn.cursor() as curs:
+            curs.execute(f"DELETE DATA FROM users WHERE verified = false AND email = %s", (email,))
 
 def create_session_token():
     return token_hex(32)
