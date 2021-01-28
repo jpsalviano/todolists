@@ -2,7 +2,7 @@ from smtplib import SMTP
 
 
 def get_credentials():
-    with open("EMAIL_", "r") as c:
+    with open("./todolists/EMAIL_", "r") as c:
         credentials = c.read().split("\n")
     return credentials
     
