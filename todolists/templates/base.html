@@ -12,16 +12,19 @@
             <div id="page-wrap">
                 {% block header %}
                 <header>
-                    <img src="/public/icon-logo.svg" class="logo-icon">
-                    <h1>TodoLists</h1>
+                    <a href="/">
+                        <img src="/public/icon-logo.svg" class="logo-icon">
+                        <h1>TodoLists</h1>
+                    </a>
                     <form action="/login" method="get" id="sign-in-button">
                         <button type="submit">Sign in</button>
                     </form>
                 </header>
                 {% endblock %}
+                {% block main %}
                 <main>
-                    {% block main %}{% endblock %}
                 </main>
+                {% endblock %}
                 <footer>
                 </footer>
             </div>

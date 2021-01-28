@@ -1,8 +1,24 @@
+{% extends "base.html" %}
+
 {% block title %}Welcome!{% endblock %}
 
+{% block header %}
+<header>
+    <a href="/">
+        <img src="/public/icon-logo.svg" class="logo-icon">
+        <h1>TodoLists</h1>
+    </a>
+    <form action="/logout" method="get" id="sign-in-button">
+        <button type="submit">Logout</button>
+    </form>
+</header>
+{% endblock %}
+
 {% block main %}
-            <h2>You have successfully logged into your TodoLists account!</h2>
-            <form action="/dashboard" method="get">
-                <button type="submit">Go to Dashboard</button>
-            </form>
+<main id="email-verification">
+    <h2>You have successfully logged into your TodoLists account!</h2>
+    <form action="/dashboard" method="get">
+        <button type="submit">Go to Dashboard</button>
+    </form>
+</main>
 {% endblock %}

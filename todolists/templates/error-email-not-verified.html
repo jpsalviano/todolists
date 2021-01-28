@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Error!{% endblock %}
+
+{% block header %}
+<header>
+    <a href="/">
+        <img src="/public/icon-logo.svg" class="logo-icon">
+        <h1>TodoLists</h1>
+    </a>
+    <form action="/" method="get" id="home-page-button">
+        <button type="submit">Home Page</button>
+    </form>
+</header>
+{% endblock %}
+
+{% block main %}
+<main id="error-warning">
+    <h2>Error!</h2>
+    <p>Your email was not verified.</p>
+    <p>Get another email verification code?</p>
+    <form action="/email_reverification" method="post">
+        <input type="hidden" name="email" value="{{ email }}">
+        <button id="signin-button" type="submit">Yes</button>
+    </form>
+</main>
+{% endblock %}

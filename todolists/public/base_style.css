@@ -29,7 +29,35 @@ header h1 {
     margin: 1%;
 }
 
+a {
+    color: white;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+}
+
 /* Index - Register */
+
+#home-page-button {
+    position: relative;
+    margin-left: 38%;
+    margin-top: 7%;
+}
+
+#home-page-button button {
+    width: 90px;
+    background: #F2994A;
+    border-radius: 6px;
+    font-family: Roboto;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 15px;
+    align-self: center;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: -0.015em;
+    color: #2D2E30;
+}
 
 #sign-in-button {
     position: relative;
@@ -37,7 +65,7 @@ header h1 {
     margin-top: 7%;
 }
 
-#sign-in-button > button {
+#sign-in-button button {
     width: 90px;
     height: 30px;
     background: #F2994A;
@@ -53,9 +81,10 @@ header h1 {
     color: #2D2E30;
 }
 
-main {
+#index-main {
     display: flex;
     justify-content: center;
+    font-family: Roboto;
 }
 
 .left-main {
@@ -197,6 +226,19 @@ main {
     font-family: Roboto;
 }
 
+/* Chrome, Safari, Edge, Opera */
+#email-verification
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+#email-verification input[type=number] {
+  -moz-appearance: textfield;
+}
+
 #email-verification form {
     align-items: center;
     overflow: hidden;
@@ -207,13 +249,15 @@ main {
 #email-verification input {
     position: relative;
     margin-top: 1%;
-    margin-bottom: 5%;
+    margin-bottom: 2%;
     background-color: #2D2E30;
     border-radius: 5px;
     width: 60px;
     height: 20px;
     font-family: Roboto;
     color: white;
+    font-size: 18px;
+    text-align: center;
 }
 
 
@@ -230,8 +274,9 @@ main {
     justify-content: center;
     letter-spacing: -0.015em;
     color: #2D2E30;
-    margin-top: 2%;
+    margin-top: 0%;
 }
+
 /* Successful Registration */
 
 #successful-registration {
@@ -256,4 +301,85 @@ main {
     letter-spacing: -0.015em;
     color: #2D2E30;
     margin-top: 10%;
+}
+
+/* Login */
+
+#login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: Roboto;   
+}
+
+#login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-input {
+    display: flex;
+    background-color: #2D2E30;
+    border-radius: 5px;
+    height: 20px;
+    width: 240px;
+    font-family: Roboto;
+    color: white;
+    margin-bottom: 2%;
+}
+
+.login-submit-button {
+    height: 30px;
+    background: #F2994A;
+    border-radius: 6px;
+    font-family: Roboto;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 15px;
+    align-self: center;
+    letter-spacing: -0.015em;
+    color: #2D2E30;
+    margin-top: 2%;
+}
+
+#forget-password {
+    display: flex;
+    align-self: center;
+}
+
+/* Dashboard */
+
+#dashboard-header {
+    display: flex;
+    flex-direction: row;
+    margin-left: 1%;
+    margin-right: 3%;
+}
+
+#dashboard-header form {
+    direction: block;
+    align-items: center;
+    margin-top: 7%;
+    margin-left: auto;
+}
+
+.dashboard-button {
+    position: relative;
+    height: 30px;
+    background: #F2994A;
+    border-radius: 6px;
+    font-family: Roboto;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 15px;
+    letter-spacing: -0.015em;
+    color: #2D2E30;
+}
+
+#dashboard {
+    font-family: Roboto;
+}
+
+#dashboard h3 {
+    text-align: center;
 }

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Error!{% endblock %}
+
+{% block header %}
+<header>
+    <img src="/public/icon-logo.svg" class="logo-icon">
+    <h1>TodoLists</h1>
+    <form action="/" method="get" id="home-page-button">
+        <button type="submit">Home Page</button>
+    </form>
+</header>
+{% endblock %}
+
+{% block main %}
+<main id="error-warning">
+    <h2>Error!</h2>
+    <p>The code entered is either wrong or expired.</p>
+    <p>Try to sign in again so you can get another email verification code.</p>
+    <form action="/login" method="get">
+        <button id="signin-button" type="submit">Sign in</button>
+    </form>
+</main>
+{% endblock %}

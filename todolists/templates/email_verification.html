@@ -4,19 +4,22 @@
 <header>
     <img src="/public/icon-logo.svg" class="logo-icon">
     <h1>TodoLists</h1>
+    <form action="/" method="get" id="home-page-button">
+        <button type="submit">Home Page</button>
+    </form>
 </header>
 {% endblock %}
 
 {% block title %}E-mail verification{% endblock %}
 
 {% block main %}
-<div id="email-verification">
+<main id="email-verification">
     <h2>Finish your registration</h2>
     <p>A code was sent to your e-mail. It will expire in 10 minutes. Enter it below so you can finish your registration:</p>
     <form action="/email_verification" method="post" id="email_token">
         <label for="token">6-digit code</label>
-        <input type="number" max="999999" name="token"><br>
+        <input type="number" max="999999" name="token" required><br>
         <button type="submit">OK</button>
     </form>
-</div>
+</main>
 {% endblock %}

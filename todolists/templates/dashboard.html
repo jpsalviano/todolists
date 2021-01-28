@@ -7,85 +7,99 @@
     {% set tasks = user["todolists"][user["selected_todolist"]]["tasks"] %}
 {% endif %}
 
-{% block title %}Dashboard{% endblock %}
-{% block nav %}
-            <div id=session>
-                <h3>Welcome to your dashboard, {{ author }}!</h3>
-                <form action="/logout" method="post">
-                    <button type="submit">Logout</button>
-                </form>
-            </div>
+{% block title %}{{ author }}'s Dashboard{% endblock %}
 
-            {% if todolists %}
-            <div id="todolists-selection">
-                <label for="todolists">Your TodoLists:</label>
-                <form action="/get-todolist" method="post">
-                    <select id="todolists" name="get-todolist">
-                    {% for list_id, list in todolists.items() %}
-                        <option value="{{ list_id }}" {% if selected_todolist_id == list_id %}selected{% endif %}>
-                            {{ list.title }}
-                        </option>
-                    {% endfor %}
-                    </select>
-                    <button type="submit">Load</button>
-                </form>
-                {% if selected_todolist %}
-                <form action="/delete-todolist" method="post">
-                    <button type="submit" name="delete-todolist" value="{{ selected_todolist_id }}">Delete</button>
-                </form>
-                </div>
-                <span>
-                    <form action="/update-todolist" method="post">
-                        <label for="change-todolist-title">Change the title of your TodoList:</label>
-                        <input type="hidden" name="update-todolist" value="{{ selected_todolist_id }}">
-                        <input type="text" id="change-todolist-title" name="change-todolist-title">
-                        <button type="submit">Change</button>
-                    </form>
-                </span>
-                {% endif %}
-            {% else %}
-            <p>You don't have any TodoLists yet!</p>
-            {% endif %}
-
-            <span id="todolists-controls">
-                <form action="/create-todolist" method="post">
-                    <label for="todolist-name">New TodoList:</label>
-                    <input type="text" id="todolist-name" name="create-todolist" required></input>
-                    <button type="submit">Create</button>
-                </form>
-            </span>
+{% block header %}
+<header id="dashboard-header">
+    <img src="/public/icon-logo.svg" class="logo-icon">
+    <h1>TodoLists</h1>
+    <form action="" method="" >
+        <button type="submit" class="dashboard-button">Change Name</button>
+    </form>
+    <form action="" method="">
+        <button type="submit" class="dashboard-button">Change Password</button>
+    </form>
+    <form action="/logout" method="get">
+        <button type="submit" class="dashboard-button">Logout</button>
+    </form>
+</header>
 {% endblock %}
+
 {% block main %}
-            {% if selected_todolist %}
-                <h4>{{ selected_todolist.title }}'s tasks</h4>
-                {% if tasks %}
-                    {% for task_id, task in tasks.items() %}
-                        {% if task.done %}
-                        <s>{{ task.task }}</s><br>
-                        <form action="/update-task" method="post">
-                            <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
-                            <input type="hidden" name="mark-task" value="false">
-                            <button type="submit" name="update-task" value="{{ task_id }}">undone</button>
-                        </form>
-                        {% else %}
-                        {{ task.task }}<br>
-                        <form action="/update-task" method="post">
-                            <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
-                            <input type="hidden" name="mark-task" value="true">
-                            <button type="submit" name="update-task" value="{{ task_id }}">done</button>
-                        </form>
-                        {% endif %}
-                        <form action="/delete-task" method="post">
-                            <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
-                            <button type="submit" name="delete-task" value="{{ task_id }}">delete</button>
-                        </form>
-                    {% endfor %}
-                {% endif %}
-                <form action="/create-task" method="post">
-                    <label for="create-task">Add task:</label>
-                    <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
-                    <input type="text" id="create-task" name="create-task" required>
-                    <button type="submit">Add</button>
-                </form>
+<main id="dashboard">
+    <h3>Welcome to your dashboard, {{ author }}!</h3>
+
+    {% if todolists %}
+    <div id="todolists-selection">
+        <label for="todolists">Your TodoLists:</label>
+        <form action="/get-todolist" method="post">
+            <select id="todolists" name="get-todolist">
+            {% for list_id, list in todolists.items() %}
+                <option value="{{ list_id }}" {% if selected_todolist_id == list_id %}selected{% endif %}>
+                    {{ list.title }}
+                </option>
+            {% endfor %}
+            </select>
+            <button type="submit">Load</button>
+        </form>
+        {% if selected_todolist %}
+        <form action="/delete-todolist" method="post">
+            <button type="submit" name="delete-todolist" value="{{ selected_todolist_id }}">Delete</button>
+        </form>
+    </div>
+    <span>
+        <form action="/update-todolist" method="post">
+            <label for="change-todolist-title">Change the title of your TodoList:</label>
+            <input type="hidden" name="update-todolist" value="{{ selected_todolist_id }}">
+            <input type="text" id="change-todolist-title" name="change-todolist-title">
+            <button type="submit">Change</button>
+        </form>
+    </span>
+    {% endif %}
+    {% else %}
+    <p>You don't have any TodoLists yet!</p>
+    {% endif %}
+
+    <span id="todolists-controls">
+        <form action="/create-todolist" method="post">
+            <label for="todolist-name">New TodoList:</label>
+            <input type="text" id="todolist-name" name="create-todolist" required></input>
+            <button type="submit">Create</button>
+        </form>
+    </span>
+
+    {% if selected_todolist %}
+    <h4>{{ selected_todolist.title }}'s tasks</h4>
+        {% if tasks %}
+        {% for task_id, task in tasks.items() %}
+            {% if task.done %}
+            <s>{{ task.task }}</s><br>
+            <form action="/update-task" method="post">
+                <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
+                <input type="hidden" name="mark-task" value="false">
+                <button type="submit" name="update-task" value="{{ task_id }}">undone</button>
+            </form>
+            {% else %}
+            {{ task.task }}<br>
+            <form action="/update-task" method="post">
+                <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
+                <input type="hidden" name="mark-task" value="true">
+                <button type="submit" name="update-task" value="{{ task_id }}">done</button>
+            </form>
             {% endif %}
+            <form action="/delete-task" method="post">
+                <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
+                <button type="submit" name="delete-task" value="{{ task_id }}">delete</button>
+            </form>
+        {% endfor %}
+        {% endif %}
+        <form action="/create-task" method="post">
+            <label for="create-task">Add task:</label>
+            <input type="hidden" name="selected-todolist" value="{{ selected_todolist_id }}">
+            <input type="text" id="create-task" name="create-task" required>
+            <button type="submit">Add</button>
+        </form>
+    {% endif %}
+
+</main>
 {% endblock %}

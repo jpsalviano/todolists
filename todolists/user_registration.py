@@ -26,8 +26,13 @@ class UserRegistration:
         except db.psycopg2.errors.UniqueViolation as error:
             resp.status = HTTP_409
             template = app.templates_env.get_template("error.html")
-            resp.text = template.render(error="Your email is already in use! Please choose another one.")
+            resp.text = template.render(error="This email is already in use!\n\
+                                               You must sign in with your password to use TodoLists.\
+                                               Or you can go back, choose another email and try to sign up again.\
+                                               If you are not aware of this registration AND you are sure the email is\
+                                               yours, contact us.")
         else:
+            resp.unset_cookie("session-token")
             template = app.templates_env.get_template("email_verification.html")
             resp.text = template.render()
 
@@ -96,10 +101,3 @@ def build_email_message_sending_token(token, email):
 
 def build_email_message_sending_token_html_body(token):
     return app.templates_env.get_template("email_message_sending_code.html").render(token=token)
-
-def send_email_with_token(email):
-    token = create_token()
-    save_token_to_redis(token, email)
-    email_message = build_email_message_sending_token(token, email)
-    server_connection = email_server.connect_server()
-    email_server.send_mail(email, email_message, server_connection)

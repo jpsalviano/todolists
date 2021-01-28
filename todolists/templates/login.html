@@ -2,17 +2,30 @@
 
 {% block title %}Login{% endblock %}
 
+{% block header %}
+<header>
+    <a href="/">
+        <img src="/public/icon-logo.svg" class="logo-icon">
+        <h1>TodoLists</h1>
+    </a>
+    <form action="/" method="get" id="home-page-button">
+        <button type="submit">Home Page</button>
+    </form>
+</header>
+{% endblock %}
+
 {% block main %}
+<main id="login">
     <h2>Login into your account</h2>
-    <form action="/login" method="post">
+    <form action="/login" method="post" id="login-form">
         <label for="email">Username:</label>
-        <input type="email" name="email">
+        <input type="email" name="email" class="login-input">
         <label for="password">Password:</label>
-        <input type="password" name="password">
-        <input type="submit">
+        <input type="password" name="password" class="login-input">
+        <input type="submit" class="login-submit-button">
     </form>
-    <p>TODO: Did you forget your password?</p>
-    <form action="/register" method="get">
-        <button type="submit">Register</button>
-    </form>
+    <div id="forget-password">
+        <p>Did you forget your password?</p>
+    </div>
+</main>
 {% endblock %}
