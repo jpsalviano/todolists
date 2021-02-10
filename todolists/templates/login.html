@@ -18,10 +18,10 @@
 <main id="login">
     <h2>Login into your account</h2>
     <form action="/login" method="post" id="login-form">
-        <label for="email">Username:</label>
-        <input type="email" name="email" class="login-input">
+        <label for="email">Email:</label>
+        <input type="email" name="email" class="login-input" required>
         <label for="password">Password:</label>
-        <input type="password" name="password" class="login-input">
+        <input type="password" name="password" class="login-input" required>
         <input type="submit" class="login-submit-button">
     </form>
     <div id="forget-password">

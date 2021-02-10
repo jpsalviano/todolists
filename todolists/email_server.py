@@ -1,9 +1,9 @@
+from os import environ
 from smtplib import SMTP
 
 
 def get_credentials():
-    with open("./EMAIL_", "r") as c:
-        credentials = c.read().split("\n")
+    credentials = environ["todolists_email_and_password"].split(" ")
     return credentials
     
 def connect_server():
